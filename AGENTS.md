@@ -61,3 +61,13 @@ Handles all external data sources and integrations. It provides a controlled bou
 - Write short, concise inline comments only when they add meaningful context.
 - Do not comment on obvious or self-explanatory code.
 - Keep comments accurate, relevant, and maintainable.
+
+## Testing
+
+- Write tests for important business rules and use cases.
+- Test critical application behavior and edge cases.
+- Prefer unit tests for Domain Layer logic.
+- Add integration tests for important data and service interactions.
+- Add UI tests for critical user flows when appropriate.
+- Tests should be deterministic and maintainable.
+- Do not write tests only to increase coverage numbers.
