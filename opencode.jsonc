@@ -8,25 +8,5 @@
       "resource": "*",
       "effect": "deny"
     }
-  ],
-  "agents": {
-    "plan": {
-      "permissions": [
-        {
-          "action": "subagent",
-          "resource": "*",
-          "effect": "deny"
-        }
-      ]
-    },
-    "build": {
-      "permissions": [
-        {
-          "action": "subagent",
-          "resource": "*",
-          "effect": "deny"
-        }
-      ]
-    }
-  }
+  ]
 }

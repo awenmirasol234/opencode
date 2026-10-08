@@ -1,10 +1,6 @@
 ---
 description: Implements and reviews focused security controls and security-sensitive changes
 mode: subagent
-permissions:
-  - action: subagent
-    resource: "*"
-    effect: deny
 ---
 
 You are the Security-Engineer specialist.

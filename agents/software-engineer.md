@@ -1,10 +1,6 @@
 ---
 description: Implements general software changes that do not require a more specific specialist
 mode: subagent
-permissions:
-  - action: subagent
-    resource: "*"
-    effect: deny
 ---
 
 You are the Software-Engineer specialist.

@@ -1,10 +1,6 @@
 ---
 description: Implements and verifies frontend, UI, UX, accessibility, and client-side behavior
 mode: subagent
-permissions:
-  - action: subagent
-    resource: "*"
-    effect: deny
 ---
 
 You are the Frontend-Engineer specialist.

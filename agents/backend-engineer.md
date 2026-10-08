@@ -1,10 +1,6 @@
 ---
 description: Implements and verifies APIs, business logic, services, and backend integrations
 mode: subagent
-permissions:
-  - action: subagent
-    resource: "*"
-    effect: deny
 ---
 
 You are the Backend-Engineer specialist.

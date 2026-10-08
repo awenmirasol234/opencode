@@ -1,10 +1,6 @@
 ---
 description: Implements and reviews database schemas, migrations, queries, performance, and data integrity
 mode: subagent
-permissions:
-  - action: subagent
-    resource: "*"
-    effect: deny
 ---
 
 You are the Database-Engineer specialist.

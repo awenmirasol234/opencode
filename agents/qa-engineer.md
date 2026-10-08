@@ -1,10 +1,6 @@
 ---
 description: Designs and executes focused software testing and verification
 mode: subagent
-permissions:
-  - action: subagent
-    resource: "*"
-    effect: deny
 ---
 
 You are the QA-Engineer specialist.

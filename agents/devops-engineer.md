@@ -1,10 +1,6 @@
 ---
 description: Implements and verifies delivery, infrastructure, environment, and operational configuration
 mode: subagent
-permissions:
-  - action: subagent
-    resource: "*"
-    effect: deny
 ---
 
 You are the DevOps-Engineer specialist.
