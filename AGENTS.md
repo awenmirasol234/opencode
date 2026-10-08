@@ -48,3 +48,16 @@ Handles all external data sources and integrations. It provides a controlled bou
 - Framework-specific code must remain outside the Domain Layer.
 - Each layer must have a clear and limited responsibility.
 - Changes in UI, APIs, databases, or external services should not require changes to core business rules.
+
+## Code Quality
+
+- Write clear, readable, and maintainable code.
+- Use descriptive names for variables, functions, classes, and files.
+- Keep functions and classes focused on a single responsibility.
+- Avoid duplicated logic and unnecessary complexity.
+- Prefer existing project utilities and dependencies before introducing new ones.
+- Remove dead, unused, and obsolete code when safe.
+- Keep code simple and easy to understand.
+- Write short, concise inline comments only when they add meaningful context.
+- Do not comment on obvious or self-explanatory code.
+- Keep comments accurate, relevant, and maintainable.
