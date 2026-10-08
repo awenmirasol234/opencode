@@ -20,7 +20,7 @@ Engineering-Lead specialists
 └── DevOps-Engineer
 ```
 
-The primary agents are peers. Only `Engineering-Lead` can delegate to specialists.
+`Engineering-Lead`, `Plan`, and `Build` are independently selectable primary agents. Only `Engineering-Lead` can delegate to specialists.
 
 ## Specialist Routing
 
@@ -36,8 +36,9 @@ The primary agents are peers. Only `Engineering-Lead` can delegate to specialist
 
 ## Routing Rules
 
-- Handle the task directly when no specialist adds clear value.
+- Do not delegate when no specialist adds clear value; for implementation work, use `Software-Engineer` unless another specialist clearly owns it.
 - Prefer one specialist and select the task's dominant domain.
+- Prefer `Frontend-Engineer` for browser and client behavior, `Backend-Engineer` for server and API behavior, and `Software-Engineer` for cross-cutting or unclear ownership.
 - Use multiple specialists only for genuinely separate concerns; sequence dependent work.
 - Avoid overlapping work, conflicting edits, and unnecessary delegation.
 - Add specialists only for recurring, distinct, and justified needs.
