@@ -1,54 +1,38 @@
-# Engineering-Lead Agent Index
+# Engineering-Lead Routing Index
 
-Quick routing reference. Use the smallest suitable specialist; consult full agent instructions for execution details.
+Use the smallest suitable specialist. Read the selected agent's full instructions before delegating.
 
-## Structure
+## Primary Agents
 
-```text
-Primary Agents
-├── Engineering-Lead
-├── Plan
-└── Build
+These are peer-level, independently selectable agents:
 
-Engineering-Lead specialists
-├── Software-Engineer
-├── Frontend-Engineer
-├── Backend-Engineer
-├── QA-Engineer
-├── Security-Engineer
-├── Database-Engineer
-└── DevOps-Engineer
-```
+- `Engineering-Lead` — owns scope, coordination, delegation, sequencing, and final decisions.
+- `Plan` — plans and explores; must not use subagents.
+- `Build` — implements directly; must not use subagents.
 
-`Engineering-Lead`, `Plan`, and `Build` are independently selectable primary agents. Only `Engineering-Lead` can delegate to specialists.
+Only `Engineering-Lead` may launch the specialized subagents below.
 
-## Specialist Routing
+## Engineering-Lead Specialized Subagents
 
-| Specialist | Use for | Avoid when |
-|---|---|---|
-| `Software-Engineer` | General implementation and cross-cutting work | A domain specialist clearly owns the task |
-| `Frontend-Engineer` | UI, UX, accessibility, responsiveness, and client behavior | The task is mainly backend, testing, or security |
-| `Backend-Engineer` | APIs, business logic, services, and integrations | The task is mainly frontend, testing, or security |
-| `QA-Engineer` | Test strategy, regression coverage, edge cases, and verification | The implementer can add straightforward tests |
-| `Security-Engineer` | Authentication, authorization, secrets, validation, and security risks | The task has no meaningful security impact |
-| `Database-Engineer` | Schemas, migrations, queries, indexes, and data integrity | The database change is trivial and low-risk |
-| `DevOps-Engineer` | Docker, CI/CD, deployment, infrastructure, and monitoring | The configuration change is routine and low-risk |
+| Agent | Route when the task is mainly about... |
+|---|---|
+| `Software-Engineer` | General implementation, cross-cutting work, or unclear ownership |
+| `Frontend-Engineer` | Browser/client behavior, UI, UX, accessibility, or responsiveness |
+| `Backend-Engineer` | APIs, server behavior, business logic, services, or integrations |
+| `QA-Engineer` | Test strategy, regression coverage, edge cases, or focused verification |
+| `Security-Engineer` | Authentication, authorization, secrets, validation, sensitive data, or security risks |
+| `Database-Engineer` | Schemas, migrations, queries, indexes, transactions, or data integrity |
+| `DevOps-Engineer` | Docker, CI/CD, deployment, infrastructure, environments, or monitoring |
 
 ## Routing Rules
 
-- Do not delegate when no specialist adds clear value; for implementation work, use `Software-Engineer` unless another specialist clearly owns it.
-- Prefer one specialist and select the task's dominant domain.
-- Prefer `Frontend-Engineer` for browser and client behavior, `Backend-Engineer` for server and API behavior, and `Software-Engineer` for cross-cutting or unclear ownership.
-- Use multiple specialists only for genuinely separate concerns; sequence dependent work.
-- Run independent workstreams concurrently only when ownership is disjoint, neither needs the other's output, and verification can proceed independently; normally use no more than two in parallel.
-- Avoid overlapping work, conflicting edits, and unnecessary delegation.
-- Add specialists only for recurring, distinct, and justified needs.
-- Keep delegation one level deep: `Engineering-Lead` → specialist.
+1. Clarify scope or requirements when needed.
+2. Choose one dominant specialist; use `Software-Engineer` for cross-cutting or unclear work.
+3. For cross-domain work, choose one primary specialist and the smallest necessary support.
+4. Use `QA-Engineer` when verification needs dedicated strategy or coverage; routine tests stay with the implementer.
+5. Run specialists in parallel only when ownership is disjoint, neither needs the other's output, and verification is independent; normally use no more than two.
+6. Sequence dependent work and never parallelize edits to shared files.
+7. Assign explicit scope, ownership, must-not-change boundaries, and verification requirements.
+8. Keep delegation one level deep: `Engineering-Lead` → specialist.
 
-## Escalation and Constraints
-
-- `Engineering-Lead` owns scope, coordination, sequencing, and final decisions.
-- For cross-domain work, choose one primary specialist and the smallest necessary support.
-- Specialists communicate through `Engineering-Lead` and cannot delegate to one another.
-- `Plan` and `Build` are independent primary agents with no subagents.
-- Specialists have no subagents and must not spawn additional agents.
+Specialized subagents report through `Engineering-Lead`, must not spawn subagents, and must not expand beyond their assigned scope.
