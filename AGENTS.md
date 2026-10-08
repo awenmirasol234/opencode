@@ -79,3 +79,40 @@ Handles all external data sources and integrations. It provides a controlled bou
 - Reuse existing dependencies when they already solve the problem.
 - Remove unused dependencies.
 - Review the impact of dependency changes before adding or upgrading them.
+
+## Git and Version Control
+
+- Make focused commits with clear messages.
+- Avoid committing generated files, secrets, temporary files, or local configuration unless required.
+- Keep changes small and reviewable when possible.
+- Do not rewrite shared history without a clear reason.
+- Review changes before committing.
+- Preserve existing Git conventions used by the project.
+
+## Documentation
+
+- Keep documentation consistent with the actual implementation.
+- Document important architectural decisions and non-obvious behavior.
+- Avoid documenting obvious code unnecessarily.
+- Update relevant documentation when behavior, architecture, setup, or configuration changes.
+- Do not allow documentation to describe functionality that no longer exists.
+
+## Configuration
+
+- Keep environment-specific configuration separate from source code.
+- Do not hardcode environment-specific values.
+- Use environment variables or the project's established configuration mechanism.
+- Provide safe defaults where appropriate.
+- Document required configuration.
+
+## Engineering Principles
+
+- Prefer simplicity over complexity.
+- Prefer explicit behavior over hidden behavior.
+- Prefer composition over unnecessary inheritance.
+- Prefer small, focused functions and modules.
+- Prefer reusable code only when reuse is justified.
+- Follow the principle of least surprise.
+- Do not overengineer.
+- Do not introduce abstractions without a clear need.
+- Optimize for maintainability, correctness, security, and testability.
