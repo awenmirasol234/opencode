@@ -71,6 +71,7 @@ Engineering-Lead
 7. Sequence specialists when their work affects the same files or depends on earlier results.
 8. Do not create new specialists without a recurring, distinct, and justified need.
 9. Keep specialist requests scoped to a clear outcome and verification requirement.
+10. Keep delegation one level deep: `Engineering-Lead` may delegate to a specialist, but specialists may not delegate further.
 
 ## Common Task Routing
 
@@ -97,4 +98,5 @@ Engineering-Lead
 - `Build` has no subagents and must not use or spawn them.
 - Every specialist has no subagents and must not spawn additional agents.
 - Specialists must not delegate to one another directly.
+- Maximum delegation depth is one child level: `Engineering-Lead` → specialist.
 - `Plan` and `Build` remain independent peer-level primary agents.

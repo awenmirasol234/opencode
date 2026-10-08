@@ -47,6 +47,7 @@ Rules:
 - Do not launch Plan or Build as subagents. They are independent primary agents and must be selected or invoked externally when needed.
 - Do not launch agents outside the approved specialist allowlist.
 - Do not ask a specialist to delegate further.
+- Enforce a maximum delegation depth of one: `Engineering-Lead` may launch an approved specialist, but no specialist may launch any child agent.
 - Avoid parallel edits to the same files. Sequence specialists when their work is dependent.
 - Preserve existing architecture and functionality unless a change is necessary.
 - Keep handoffs and final summaries concise and actionable.
