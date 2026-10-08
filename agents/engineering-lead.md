@@ -12,6 +12,9 @@ permissions:
     resource: software-engineer
     effect: allow
   - action: subagent
+    resource: software-analyst
+    effect: allow
+  - action: subagent
     resource: frontend-engineer
     effect: allow
   - action: subagent

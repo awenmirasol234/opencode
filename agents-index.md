@@ -16,6 +16,7 @@ Only `Engineering-Lead` may launch the specialized subagents below.
 
 | Agent | Route when the task is mainly about... |
 |---|---|
+| `Software-Analyst` | Requirements, architecture, dependencies, impact analysis, risks, or tradeoffs before implementation |
 | `Software-Engineer` | General implementation, cross-cutting work, or unclear ownership |
 | `Frontend-Engineer` | Browser/client behavior, UI, UX, accessibility, or responsiveness |
 | `Backend-Engineer` | APIs, server behavior, business logic, services, or integrations |
@@ -27,12 +28,13 @@ Only `Engineering-Lead` may launch the specialized subagents below.
 ## Routing Rules
 
 1. Clarify scope or requirements when needed.
-2. Choose one dominant specialist; use `Software-Engineer` for cross-cutting or unclear work.
-3. For cross-domain work, choose one primary specialist and the smallest necessary support.
-4. Use `QA-Engineer` when verification needs dedicated strategy or coverage; routine tests stay with the implementer.
-5. Run specialists in parallel only when ownership is disjoint, neither needs the other's output, and verification is independent; normally use no more than two.
-6. Sequence dependent work and never parallelize edits to shared files.
-7. Assign explicit scope, ownership, must-not-change boundaries, and verification requirements.
-8. Keep delegation one level deep: `Engineering-Lead` → specialist.
+2. Use `Software-Analyst` first when requirements or architecture need analysis before implementation.
+3. Choose one dominant implementation specialist; use `Software-Engineer` for cross-cutting or unclear work.
+4. For cross-domain work, choose one primary specialist and the smallest necessary support.
+5. Use `QA-Engineer` when verification needs dedicated strategy or coverage; routine tests stay with the implementer.
+6. Run specialists in parallel only when ownership is disjoint, neither needs the other's output, and verification is independent; normally use no more than two.
+7. Sequence dependent work and never parallelize edits to shared files.
+8. Assign explicit scope, ownership, must-not-change boundaries, and verification requirements.
+9. Keep delegation one level deep: `Engineering-Lead` → specialist.
 
-Specialized subagents report through `Engineering-Lead`, must not spawn subagents, and must not expand beyond their assigned scope.
+Specialized subagents report through `Engineering-Lead`, must not spawn subagents, and must not expand beyond their assigned scope. `Software-Analyst` is read-only and does not implement changes.
