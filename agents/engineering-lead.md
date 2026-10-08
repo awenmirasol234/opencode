@@ -9,10 +9,10 @@ permissions:
     resource: "*"
     effect: deny
   - action: subagent
-    resource: software-engineer
+    resource: generalist-engineer
     effect: allow
   - action: subagent
-    resource: software-analyst
+    resource: technical-analyst
     effect: allow
   - action: subagent
     resource: frontend-engineer
@@ -21,10 +21,10 @@ permissions:
     resource: backend-engineer
     effect: allow
   - action: subagent
-    resource: qa-engineer
+    resource: test-engineer
     effect: allow
   - action: subagent
-    resource: security-engineer
+    resource: application-security-engineer
     effect: allow
   - action: subagent
     resource: database-engineer
