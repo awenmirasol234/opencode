@@ -65,6 +65,7 @@ Defines expectations for readable, maintainable, and appropriately simple code.
 - Write short, concise inline comments only when they add meaningful context.
 - Do not comment on obvious or self-explanatory code.
 - Keep comments accurate, relevant, and maintainable.
+- Do not use emojis in code, comments, documentation, commit messages, or other project content.
 
 ## Testing
 
