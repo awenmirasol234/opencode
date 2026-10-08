@@ -71,3 +71,11 @@ Handles all external data sources and integrations. It provides a controlled bou
 - Add UI tests for critical user flows when appropriate.
 - Tests should be deterministic and maintainable.
 - Do not write tests only to increase coverage numbers.
+
+## Dependency Management
+
+- Avoid adding dependencies unless they provide clear value.
+- Prefer stable and well-maintained libraries.
+- Reuse existing dependencies when they already solve the problem.
+- Remove unused dependencies.
+- Review the impact of dependency changes before adding or upgrading them.
