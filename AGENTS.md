@@ -40,6 +40,8 @@ Handles all external data sources and integrations. It provides a controlled bou
 
 ## Architecture Rules
 
+Defines the dependency boundaries and structural responsibilities between layers.
+
 - Dependencies must point inward toward the Domain Layer.
 - The Domain Layer must not depend on the Presentation or Data Layer.
 - The Presentation Layer must not access external data sources directly.
@@ -50,6 +52,8 @@ Handles all external data sources and integrations. It provides a controlled bou
 - Changes in UI, APIs, databases, or external services should not require changes to core business rules.
 
 ## Code Quality
+
+Defines expectations for readable, maintainable, and appropriately simple code.
 
 - Write clear, readable, and maintainable code.
 - Use descriptive names for variables, functions, classes, and files.
@@ -64,6 +68,8 @@ Handles all external data sources and integrations. It provides a controlled bou
 
 ## Testing
 
+Defines expectations for meaningful, deterministic, and maintainable test coverage.
+
 - Write tests for important business rules and use cases.
 - Test critical application behavior and edge cases.
 - Prefer unit tests for Domain Layer logic.
@@ -74,6 +80,8 @@ Handles all external data sources and integrations. It provides a controlled bou
 
 ## Dependency Management
 
+Defines how dependencies are selected, reused, reviewed, and removed.
+
 - Avoid adding dependencies unless they provide clear value.
 - Prefer stable and well-maintained libraries.
 - Reuse existing dependencies when they already solve the problem.
@@ -81,6 +89,8 @@ Handles all external data sources and integrations. It provides a controlled bou
 - Review the impact of dependency changes before adding or upgrading them.
 
 ## Git and Version Control
+
+Defines practices for focused, reviewable, and safe version-control changes.
 
 - Make focused commits with clear messages.
 - Avoid committing generated files, secrets, temporary files, or local configuration unless required.
@@ -91,6 +101,8 @@ Handles all external data sources and integrations. It provides a controlled bou
 
 ## Documentation
 
+Defines how documentation stays accurate, useful, and aligned with implementation.
+
 - Keep documentation consistent with the actual implementation.
 - Document important architectural decisions and non-obvious behavior.
 - Avoid documenting obvious code unnecessarily.
@@ -99,6 +111,8 @@ Handles all external data sources and integrations. It provides a controlled bou
 
 ## Configuration
 
+Defines how environment-specific settings are separated, documented, and safely managed.
+
 - Keep environment-specific configuration separate from source code.
 - Do not hardcode environment-specific values.
 - Use environment variables or the project's established configuration mechanism.
@@ -106,6 +120,8 @@ Handles all external data sources and integrations. It provides a controlled bou
 - Document required configuration.
 
 ## Engineering Principles
+
+Defines the general principles used to guide engineering decisions.
 
 - Prefer simplicity over complexity.
 - Prefer explicit behavior over hidden behavior.
