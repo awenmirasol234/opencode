@@ -40,6 +40,7 @@ Engineering-Lead specialists
 - Prefer one specialist and select the task's dominant domain.
 - Prefer `Frontend-Engineer` for browser and client behavior, `Backend-Engineer` for server and API behavior, and `Software-Engineer` for cross-cutting or unclear ownership.
 - Use multiple specialists only for genuinely separate concerns; sequence dependent work.
+- Run independent workstreams concurrently only when ownership is disjoint, neither needs the other's output, and verification can proceed independently; normally use no more than two in parallel.
 - Avoid overlapping work, conflicting edits, and unnecessary delegation.
 - Add specialists only for recurring, distinct, and justified needs.
 - Keep delegation one level deep: `Engineering-Lead` → specialist.
