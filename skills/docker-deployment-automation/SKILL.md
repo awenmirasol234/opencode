@@ -194,23 +194,6 @@ Failure behavior:
 - Add comments only to explain important reasoning or safety behavior.
 - Do not suppress errors, weaken tests, or remove assertions to obtain a passing result.
 
-## Verification
-
-Use mocks or safe test doubles for commands that could affect production services. Verify:
-
-- Execution order is correct.
-- Preflight and backup failures stop deployment and do not trigger rollback.
-- Compose validation occurs before deployment.
-- Compose validation failures do not trigger rollback.
-- Deployment and health-check failures trigger rollback.
-- Rollback failures are reported and return nonzero.
-- Final reporting runs for every outcome.
-- Cleanup protects backups, logs, volumes, persistent data, and recovery files.
-- Secrets are absent from terminal and log output.
-- Existing tests continue to pass.
-
-Run relevant project checks and tests. Report unavailable checks rather than claiming they passed.
-
 ## Expected deliverable
 
 Provide a concise summary of:
@@ -220,3 +203,20 @@ Provide a concise summary of:
 3. Verification commands run.
 4. Verification results.
 5. Project-specific assumptions, unsupported checks, or required configuration.
+
+## Verification checklist
+
+Use mocks or safe test doubles for commands that could affect production services. Verify:
+
+- [ ] Execution order is correct.
+- [ ] Preflight and backup failures stop deployment and do not trigger rollback.
+- [ ] Compose validation occurs before deployment.
+- [ ] Compose validation failures do not trigger rollback.
+- [ ] Deployment and health-check failures trigger rollback.
+- [ ] Rollback failures are reported and return nonzero.
+- [ ] Final reporting runs for every outcome.
+- [ ] Cleanup protects backups, logs, volumes, persistent data, and recovery files.
+- [ ] Secrets are absent from terminal and log output.
+- [ ] Existing tests continue to pass.
+
+Run relevant project checks and tests. Report unavailable checks rather than claiming they passed.
