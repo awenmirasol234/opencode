@@ -3,6 +3,12 @@
 Every app we build follows Clean Architecture.
 Clean Architecture is the engineering standard applied to every project.
 
+## Repository Guidance
+
+- Read `agents-index.md` before selecting or routing agents.
+- Follow repository-specific configuration and permissions in `opencode.jsonc`.
+- Do not assume build, test, or runtime commands; inspect project manifests and CI configuration first.
+
 ## Engineering Principles
 
 Defines the general principles used to guide engineering decisions.
@@ -92,6 +98,12 @@ Defines expectations for meaningful, deterministic, and maintainable test covera
 - Tests should be deterministic and maintainable.
 - Do not write tests only to increase coverage numbers.
 
+## Verification
+
+- Run available project checks relevant to the change.
+- For documentation or configuration changes, run targeted validation such as `git diff --check`.
+- Report checks that are unavailable rather than inventing commands.
+
 ## Dependency Management
 
 Defines how dependencies are selected, reused, reviewed, and removed.
@@ -111,6 +123,12 @@ Defines how environment-specific settings are separated, documented, and safely 
 - Use environment variables or the project's established configuration mechanism.
 - Provide safe defaults where appropriate.
 - Document required configuration.
+
+## Security
+
+- Never expose, commit, or copy secrets, credentials, or sensitive configuration.
+- Keep sensitive local configuration ignored and environment-specific.
+- Treat external input and configuration as untrusted at system boundaries.
 
 ## Documentation
 
