@@ -3,17 +3,32 @@
 Every app we build follows Clean Architecture.
 Clean Architecture is the engineering standard applied to every project.
 
-## Presentation Layer
+## Engineering Principles
 
-Responsible for everything related to the user interface and user interaction. It is fully decoupled from business rules so the interface can evolve without affecting domain logic.
+Defines the general principles used to guide engineering decisions.
 
-- Screens and UI components
-- Navigation and routing
-- ViewModels and state management
-- Responsive and adaptive layouts
-- User input handling
-- Loading, error, and success states
-- User feedback and presentation logic
+- Prefer simplicity over complexity.
+- Prefer explicit behavior over hidden behavior.
+- Prefer composition over unnecessary inheritance.
+- Prefer small, focused functions and modules.
+- Prefer reusable code only when reuse is justified.
+- Follow the principle of least surprise.
+- Do not overengineer.
+- Do not introduce abstractions without a clear need.
+- Optimize for maintainability, correctness, security, and testability.
+
+## Architecture Rules
+
+Defines the dependency boundaries and structural responsibilities between layers.
+
+- Dependencies must point inward toward the Domain Layer.
+- The Domain Layer must not depend on the Presentation or Data Layer.
+- The Presentation Layer must not access external data sources directly.
+- The Data Layer must implement repository contracts defined by the Domain Layer.
+- Business rules must remain inside the Domain Layer.
+- Framework-specific code must remain outside the Domain Layer.
+- Each layer must have a clear and limited responsibility.
+- Changes in UI, APIs, databases, or external services should not require changes to core business rules.
 
 ## Domain Layer
 
@@ -38,18 +53,17 @@ Handles all external data sources and integrations. It provides a controlled bou
 - Remote and local data sources
 - Third-party service integrations
 
-## Architecture Rules
+## Presentation Layer
 
-Defines the dependency boundaries and structural responsibilities between layers.
+Responsible for everything related to the user interface and user interaction. It is fully decoupled from business rules so the interface can evolve without affecting domain logic.
 
-- Dependencies must point inward toward the Domain Layer.
-- The Domain Layer must not depend on the Presentation or Data Layer.
-- The Presentation Layer must not access external data sources directly.
-- The Data Layer must implement repository contracts defined by the Domain Layer.
-- Business rules must remain inside the Domain Layer.
-- Framework-specific code must remain outside the Domain Layer.
-- Each layer must have a clear and limited responsibility.
-- Changes in UI, APIs, databases, or external services should not require changes to core business rules.
+- Screens and UI components
+- Navigation and routing
+- ViewModels and state management
+- Responsive and adaptive layouts
+- User input handling
+- Loading, error, and success states
+- User feedback and presentation logic
 
 ## Code Quality
 
@@ -89,16 +103,15 @@ Defines how dependencies are selected, reused, reviewed, and removed.
 - Remove unused dependencies.
 - Review the impact of dependency changes before adding or upgrading them.
 
-## Git and Version Control
+## Configuration
 
-Defines practices for focused, reviewable, and safe version-control changes.
+Defines how environment-specific settings are separated, documented, and safely managed.
 
-- Make focused commits with clear messages.
-- Avoid committing generated files, secrets, temporary files, or local configuration unless required.
-- Keep changes small and reviewable when possible.
-- Do not rewrite shared history without a clear reason.
-- Review changes before committing.
-- Preserve existing Git conventions used by the project.
+- Keep environment-specific configuration separate from source code.
+- Do not hardcode environment-specific values.
+- Use environment variables or the project's established configuration mechanism.
+- Provide safe defaults where appropriate.
+- Document required configuration.
 
 ## Documentation
 
@@ -110,26 +123,13 @@ Defines how documentation stays accurate, useful, and aligned with implementatio
 - Update relevant documentation when behavior, architecture, setup, or configuration changes.
 - Do not allow documentation to describe functionality that no longer exists.
 
-## Configuration
+## Git and Version Control
 
-Defines how environment-specific settings are separated, documented, and safely managed.
+Defines practices for focused, reviewable, and safe version-control changes.
 
-- Keep environment-specific configuration separate from source code.
-- Do not hardcode environment-specific values.
-- Use environment variables or the project's established configuration mechanism.
-- Provide safe defaults where appropriate.
-- Document required configuration.
-
-## Engineering Principles
-
-Defines the general principles used to guide engineering decisions.
-
-- Prefer simplicity over complexity.
-- Prefer explicit behavior over hidden behavior.
-- Prefer composition over unnecessary inheritance.
-- Prefer small, focused functions and modules.
-- Prefer reusable code only when reuse is justified.
-- Follow the principle of least surprise.
-- Do not overengineer.
-- Do not introduce abstractions without a clear need.
-- Optimize for maintainability, correctness, security, and testability.
+- Make focused commits with clear messages.
+- Avoid committing generated files, secrets, temporary files, or local configuration unless required.
+- Keep changes small and reviewable when possible.
+- Do not rewrite shared history without a clear reason.
+- Review changes before committing.
+- Preserve existing Git conventions used by the project.
