@@ -29,6 +29,7 @@ Defines the dependency boundaries and structural responsibilities between layers
 - Framework-specific code must remain outside the Domain Layer.
 - Each layer must have a clear and limited responsibility.
 - Changes in UI, APIs, databases, or external services should not require changes to core business rules.
+- Keep modules loosely coupled and highly cohesive. Depend on stable abstractions rather than concrete implementations, and minimize knowledge shared between unrelated modules.
 
 ## Domain Layer
 
