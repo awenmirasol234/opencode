@@ -3,12 +3,6 @@
 Every app we build follows Clean Architecture.
 Clean Architecture is the engineering standard applied to every project.
 
-## Repository Guidance
-
-- Read `agents-index.md` before selecting or routing agents.
-- Follow repository-specific configuration and permissions in `opencode.jsonc`.
-- Do not assume build, test, or runtime commands; inspect project manifests and CI configuration first.
-
 ## Engineering Principles
 
 Defines the general principles used to guide engineering decisions.
