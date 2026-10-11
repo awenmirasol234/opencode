@@ -73,14 +73,20 @@ Defines expectations for readable, maintainable, and appropriately simple code.
 - Use descriptive names for variables, functions, classes, and files.
 - Avoid single-letter or two-letter variable names unless they are conventional and contextually clear. Prefer clear, descriptive variable names.
 - Follow established project patterns, naming conventions, formatting, and architectural conventions. Introduce new patterns only when justified and document them when necessary.
+- Use PascalCase for classes, types, and components; camelCase for variables, functions, and methods; UPPER_SNAKE_CASE for constants; and kebab-case for file and directory names unless the language or framework establishes a different convention. Preserve existing project conventions.
 - Keep functions and classes focused on a single responsibility.
 - Avoid duplicated logic and unnecessary complexity.
 - Prefer existing project utilities and dependencies before introducing new ones.
 - Remove dead, unused, and obsolete code when safe.
 - Keep code simple and easy to understand.
-- Write short, concise inline comments only when they add meaningful context.
-- Do not comment on obvious or self-explanatory code.
-- Keep comments accurate, relevant, and maintainable.
+- Comments should explain why, not what; code should be clear and self-documenting.
+- Do not duplicate the code in comments or use comments to excuse unclear code.
+- If a clear comment cannot be written, reconsider the code's clarity before adding the comment.
+- Use comments to clarify intent, context, reasoning, confusing behavior, or intentionally unidiomatic code.
+- Keep comments concise, accurate, relevant, and maintainable; comments should dispel confusion, not cause it.
+- Include links to the original source of copied code and to useful external references.
+- Add comments when fixing non-obvious bugs, especially when documenting their cause or constraints.
+- Mark incomplete implementations clearly with markers such as TODO or FIXME and include useful context.
 - Do not use emojis in code, comments, documentation, commit messages, or other project content.
 
 ## Testing
