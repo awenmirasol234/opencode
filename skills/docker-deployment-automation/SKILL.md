@@ -47,6 +47,43 @@ Initialize terminal and file logging. Record timestamps, stages, command results
 
 Never log secret values, passwords, tokens, private keys, or complete environment contents. Redact sensitive command output.
 
+Terminal output must use this readable format:
+
+```text
+[INFO] Starting Docker deployment...
+
+[INFO] Step 1: Preflight check...
+[ OK ] Docker is running.
+[ OK ] Docker Compose is available.
+[ OK ] .env file found.
+[PASS] Preflight check passed.
+
+[INFO] Step 2: Backup...
+[ OK ] Database backup saved.
+[ OK ] Configuration files backed up.
+[PASS] Backup complete: backups/backup_20261011_092119
+
+[INFO] Step 3: Deploy...
+[INFO] Pulling db image...
+```
+
+Use these message levels consistently:
+
+- `[INFO]` for stages and progress messages.
+- `[ OK ]` for an individual successful check or action.
+- `[PASS]` for a completed stage.
+- `[WARN]` for a non-fatal warning.
+- `[FAIL]` for a failed check, action, or stage.
+
+Use ANSI colors only for interactive terminal output:
+
+- `[INFO]` and stage headings: cyan or blue.
+- `[ OK ]` and `[PASS]`: green.
+- `[WARN]`: yellow.
+- `[FAIL]`: red.
+
+Keep file logs uncolored and include timestamps in them. Disable terminal colors when output is not a TTY or when the `NO_COLOR` environment variable is set. Do not make colors or terminal formatting affect exit codes or log content.
+
 ### 2. Preflight
 
 Validate required tools, Docker, Docker Compose, Compose configuration, required environment variable names, permissions, disk space, and project-specific prerequisites.
