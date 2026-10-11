@@ -71,6 +71,8 @@ Defines expectations for readable, maintainable, and appropriately simple code.
 
 - Write clear, readable, and maintainable code.
 - Use descriptive names for variables, functions, classes, and files.
+- Avoid single-letter or two-letter variable names unless they are conventional and contextually clear. Prefer clear, descriptive variable names.
+- Follow established project patterns, naming conventions, formatting, and architectural conventions. Introduce new patterns only when justified and document them when necessary.
 - Keep functions and classes focused on a single responsibility.
 - Avoid duplicated logic and unnecessary complexity.
 - Prefer existing project utilities and dependencies before introducing new ones.
