@@ -1,11 +1,6 @@
 # Clean Architecture Standard
 
-Every app we build follows Clean Architecture.
-Clean Architecture is the engineering standard applied to every project.
-
 ## Engineering Principles
-
-Defines the general principles used to guide engineering decisions.
 
 - Prefer simplicity over complexity.
 - Prefer explicit behavior over hidden behavior.
@@ -19,8 +14,6 @@ Defines the general principles used to guide engineering decisions.
 
 ## Architecture Rules
 
-Defines the dependency boundaries and structural responsibilities between layers.
-
 - Dependencies must point inward toward the Domain Layer.
 - The Domain Layer must not depend on the Presentation or Data Layer.
 - The Presentation Layer must not access external data sources directly.
@@ -33,8 +26,6 @@ Defines the dependency boundaries and structural responsibilities between layers
 
 ## Domain Layer
 
-Contains the core business logic of the application. It has zero framework dependencies, making it portable, testable, and stable.
-
 - Use cases and application workflows
 - Core entities and value objects
 - Business rules and validation
@@ -43,8 +34,6 @@ Contains the core business logic of the application. It has zero framework depen
 - Business logic independent of UI and data sources
 
 ## Data Layer
-
-Handles all external data sources and integrations. It provides a controlled boundary between the application and external systems, keeping business logic independent of implementation details.
 
 - Repository implementations
 - API clients and service adapters
@@ -55,8 +44,6 @@ Handles all external data sources and integrations. It provides a controlled bou
 - Third-party service integrations
 
 ## Presentation Layer
-
-Responsible for everything related to the user interface and user interaction. It is fully decoupled from business rules so the interface can evolve without affecting domain logic.
 
 - Screens and UI components
 - Navigation and routing
@@ -82,8 +69,6 @@ Responsible for everything related to the user interface and user interaction. I
 
 ## Testing
 
-Defines expectations for meaningful, deterministic, and maintainable test coverage.
-
 - Write tests for important business rules and use cases.
 - Test critical application behavior and edge cases.
 - Prefer unit tests for Domain Layer logic.
@@ -100,8 +85,6 @@ Defines expectations for meaningful, deterministic, and maintainable test covera
 
 ## Dependency Management
 
-Defines how dependencies are selected, reused, reviewed, and removed.
-
 - Avoid adding dependencies unless they provide clear value.
 - Prefer stable and well-maintained libraries.
 - Reuse existing dependencies when they already solve the problem.
@@ -109,8 +92,6 @@ Defines how dependencies are selected, reused, reviewed, and removed.
 - Review the impact of dependency changes before adding or upgrading them.
 
 ## Configuration
-
-Defines how environment-specific settings are separated, documented, and safely managed.
 
 - Keep environment-specific configuration separate from source code.
 - Do not hardcode environment-specific values.
@@ -126,8 +107,6 @@ Defines how environment-specific settings are separated, documented, and safely 
 
 ## Documentation
 
-Defines how documentation stays accurate, useful, and aligned with implementation.
-
 - Keep documentation consistent with the actual implementation.
 - Document important architectural decisions and non-obvious behavior.
 - Avoid documenting obvious code unnecessarily.
@@ -135,8 +114,6 @@ Defines how documentation stays accurate, useful, and aligned with implementatio
 - Do not allow documentation to describe functionality that no longer exists.
 
 ## Git and Version Control
-
-Defines practices for focused, reviewable, and safe version-control changes.
 
 - Make focused commits with clear messages.
 - Avoid committing generated files, secrets, temporary files, or local configuration unless required.
