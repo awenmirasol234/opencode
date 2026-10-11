@@ -1,5 +1,8 @@
 # Clean Architecture Standard
 
+Every app we build follows Clean Architecture.
+Clean Architecture is the engineering standard applied to every project.
+
 ## Engineering Principles
 
 - Prefer simplicity over complexity.
