@@ -8,5 +8,56 @@
       "resource": "*",
       "effect": "deny"
     }
-  ]
+  ],
+  "agents": {
+    "plan": {
+      "permissions": [
+        {
+          "action": "subagent",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "subagent",
+          "resource": "generalist-engineer",
+          "effect": "allow"
+        },
+        {
+          "action": "subagent",
+          "resource": "technical-analyst",
+          "effect": "allow"
+        },
+        {
+          "action": "subagent",
+          "resource": "frontend-engineer",
+          "effect": "allow"
+        },
+        {
+          "action": "subagent",
+          "resource": "backend-engineer",
+          "effect": "allow"
+        },
+        {
+          "action": "subagent",
+          "resource": "test-engineer",
+          "effect": "allow"
+        },
+        {
+          "action": "subagent",
+          "resource": "application-security-engineer",
+          "effect": "allow"
+        },
+        {
+          "action": "subagent",
+          "resource": "database-engineer",
+          "effect": "allow"
+        },
+        {
+          "action": "subagent",
+          "resource": "devops-engineer",
+          "effect": "allow"
+        }
+      ]
+    }
+  }
 }

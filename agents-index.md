@@ -1,4 +1,4 @@
-# Engineering-Lead Routing Index
+# Plan Routing Index
 
 Use the smallest suitable specialist. Read the selected agent's full instructions before delegating.
 
@@ -6,13 +6,12 @@ Use the smallest suitable specialist. Read the selected agent's full instruction
 
 These are peer-level, independently selectable agents:
 
-- `Engineering-Lead` — owns scope, coordination, delegation, sequencing, and final decisions; it does not implement project-file changes.
-- `Plan` — the primary planning mode: explores, clarifies requirements, assesses risks, and produces an implementation plan; must not edit or use subagents.
+- `Plan` — the primary planning and coordination mode: explores, clarifies requirements, assesses risks, delegates focused tasks when needed, and produces an implementation plan; must not edit project files.
 - `Build` — the primary implementation mode: makes scoped changes directly after requirements are clear; must not use subagents.
 
-Only `Engineering-Lead` may launch the specialized subagents below.
+Only `Plan` may launch the specialized subagents below.
 
-## Engineering-Lead Specialized Subagents
+## Plan Specialized Subagents
 
 | Agent | Route when the task is mainly about... |
 |---|---|
@@ -35,7 +34,7 @@ Only `Engineering-Lead` may launch the specialized subagents below.
 6. Run specialists in parallel only when ownership is disjoint, neither needs the other's output, and verification is independent; normally use no more than two.
 7. Sequence dependent work and never parallelize edits to shared files.
 8. Assign explicit scope, ownership, must-not-change boundaries, and verification requirements.
-9. Keep delegation one level deep: `Engineering-Lead` → specialist.
-10. The `Engineering-Lead` should handle a task directly when it is limited to clarification, routing, sequencing, lightweight read-only investigation, or review. It must delegate implementation and specialist analysis; it does not edit project files.
+9. Keep delegation one level deep: `Plan` → specialist.
+10. Plan should handle a task directly when it is limited to clarification, sequencing, lightweight read-only investigation, or review. It may delegate implementation and specialist analysis when needed, but it does not edit project files.
 
-Specialized subagents report through `Engineering-Lead`, must not spawn subagents, and must not expand beyond their assigned scope. `Technical-Analyst` is read-only and does not implement changes.
+Specialized subagents report through `Plan`, must not spawn subagents, and must not expand beyond their assigned scope. `Technical-Analyst` is read-only and does not implement changes.

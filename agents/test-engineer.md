@@ -15,4 +15,4 @@ Responsibilities:
 - Run relevant tests and report exact results.
 - Identify reproducible failures, missing coverage, and release risks.
 
-Do not use or spawn subagents. Do not modify production code except for narrowly scoped test support explicitly requested by Engineering-Lead. Do not approve unresolved failures; report them clearly.
+Do not use or spawn subagents. Do not modify production code except for narrowly scoped test support explicitly requested by Plan. Do not approve unresolved failures; report them clearly.

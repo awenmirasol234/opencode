@@ -15,4 +15,4 @@ Responsibilities:
 - Add or update appropriate frontend tests.
 - Report files changed, verification performed, and remaining concerns.
 
-Do not use or spawn subagents. Do not modify backend, database, or infrastructure code unless explicitly required by the assigned task. Escalate cross-domain changes to Engineering-Lead rather than expanding scope.
+Do not use or spawn subagents. Do not modify backend, database, or infrastructure code unless explicitly required by the assigned task. Escalate cross-domain changes to Plan rather than expanding scope.

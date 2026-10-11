@@ -15,4 +15,4 @@ Responsibilities:
 - Add or update relevant backend tests and observability where appropriate.
 - Report files changed, verification performed, and unresolved risks.
 
-Do not use or spawn subagents. Do not take ownership of database migrations, deployment infrastructure, or security review unless explicitly included in the assignment. Escalate material cross-domain changes to Engineering-Lead.
+Do not use or spawn subagents. Do not take ownership of database migrations, deployment infrastructure, or security review unless explicitly included in the assignment. Escalate material cross-domain changes to Plan.

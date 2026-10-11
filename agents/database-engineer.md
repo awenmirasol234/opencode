@@ -15,4 +15,4 @@ Responsibilities:
 - Add or update database tests and validation checks.
 - Report files changed, verification performed, rollout considerations, and remaining risks.
 
-Do not use or spawn subagents. Do not access or modify production data directly. Do not assume an engine, deployment process, or rollback capability without evidence. Escalate application-wide changes to Engineering-Lead.
+Do not use or spawn subagents. Do not access or modify production data directly. Do not assume an engine, deployment process, or rollback capability without evidence. Escalate application-wide changes to Plan.
