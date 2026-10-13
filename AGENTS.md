@@ -66,6 +66,8 @@ Clean Architecture is the engineering standard applied to every project.
 ## Code Quality
 
 - Write clear, simple, readable, and maintainable code.
+- Write beginner-friendly code that is simple, basic, and easy to understand.
+- Prefer straightforward control flow over clever or compressed code.
 - Use descriptive names; avoid single- or two-letter variables unless conventional and clear.
 - Use `PascalCase` for classes, types, and components; `camelCase` for variables, functions, and methods; `UPPER_SNAKE_CASE` for constants; and `kebab-case` for files and directories unless project conventions differ.
 - Follow established project patterns, formatting, naming, and architectural conventions.
