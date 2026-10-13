@@ -15,6 +15,13 @@ Clean Architecture is the engineering standard applied to every project.
 - Do not introduce abstractions without a clear need.
 - Optimize for maintainability, correctness, security, and testability.
 
+## Clarification and Questions
+
+- Whenever requirements, scope, constraints, desired behavior, or a significant implementation decision is unclear, use the available ask-question tool to ask the user before proceeding.
+- Do not guess about material ambiguities. Explain the decision that is needed and offer concise options where appropriate.
+- Proceed without asking only for low-risk details that are unambiguous from the request or established project conventions.
+- Confirm destructive or irreversible actions with the user before executing them.
+
 ## Architecture Rules
 
 - Dependencies must point inward toward the Domain Layer.
