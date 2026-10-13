@@ -5,10 +5,20 @@ Clean Architecture is the engineering standard applied to every project.
 
 ## Clarification and Questions
 
-- Whenever requirements, scope, constraints, desired behavior, or a significant implementation decision is unclear, use the available ask-question tool to ask the user before proceeding.
-- Do not guess about material ambiguities. Explain the decision that is needed and offer concise options where appropriate.
+- Whenever a task, requirement, instruction, scope, constraint, desired behavior, or significant implementation decision is unclear or ambiguous, use the available `question` tool to ask the user for clarification before proceeding.
+- Do not make assumptions or proceed with uncertain requirements. Explain what needs clarification and offer concise options where appropriate.
 - Proceed without asking only for low-risk details that are unambiguous from the request or established project conventions.
 - Confirm destructive or irreversible actions with the user before executing them.
+
+## Tool Usage
+
+- Use `read` to inspect files, `glob` to find file paths, and `grep` to search file contents.
+- Use `edit` for focused changes, `write` to create or replace text files, and `patch` for structured changes across one or more files.
+- Use `shell` to run project commands and verification checks. Prefer dedicated file tools for file operations.
+- Use `webfetch` to retrieve a known web page and `websearch` to find current external information.
+- Use the `question` tool whenever clarification is required, as described above.
+- Use `skill` when a task matches an available specialized skill, `subagent` for delegated work when appropriate, and `execute` to combine independent tool calls.
+- Use browser, session, worktree, and MCP tools only when they are available and relevant to the task.
 
 ## Engineering Principles
 
