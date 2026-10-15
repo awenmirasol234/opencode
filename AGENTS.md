@@ -66,13 +66,17 @@ Every app follows Clean Architecture, which is the engineering standard for all 
 
 ## Code Quality
 
-- Write clear, simple, readable, maintainable, and beginner-friendly code with straightforward control flow.
-- Use descriptive names; avoid single- or two-letter variables unless conventional and clear.
+- Write the simplest code that correctly solves the problem. Prefer basic, readable syntax and straightforward control flow that beginners can read, debug, test, and maintain.
+- Prefer clear, explicit solutions over clever, advanced, or overly abstract implementations.
+- Keep each function, class, and module focused on one responsibility.
+- Use clear, descriptive names; avoid single- or two-letter variables unless conventional and clear.
 - Use `PascalCase` for classes, types, and components; `camelCase` for variables, functions, and methods; `UPPER_SNAKE_CASE` for constants; and `kebab-case` for files and directories unless project conventions differ.
-- Follow established project patterns, formatting, naming, and architectural conventions.
-- Keep functions and classes focused; avoid duplication and unnecessary abstractions.
-- Prefer existing utilities and dependencies. Remove dead code when safe.
-- Use concise, accurate comments to explain intent, reasoning, or non-obvious behavior—not what the code already shows. Do not duplicate code in comments or use them to excuse unclear code.
+- Avoid unnecessary abstractions, design patterns, wrappers, helper functions, and dependencies. Add them only when they provide clear value.
+- Reuse existing utilities, dependencies, and implementations when appropriate instead of duplicating code. Remove dead code when safe.
+- Avoid deeply nested conditions and unnecessarily complex logic.
+- Follow the existing project architecture, patterns, formatting, naming, and conventions without adding unnecessary complexity.
+- Preserve existing functionality and avoid unrelated changes.
+- Add concise comments only when they explain non-obvious behavior or reasoning. Do not repeat the code in comments or use comments to excuse unclear code.
 - Link copied code and useful external references. Mark incomplete work with `TODO` or `FIXME`.
 - Do not use emojis in code, comments, documentation, or commit messages.
 
