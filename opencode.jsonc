@@ -1,5 +1,8 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "default_agent": "plan",
-  "shell": "powershell"
+  "shell": "powershell",
+  "plugins": [
+    "@dietrichgebert/ponytail"
+  ]
 }
