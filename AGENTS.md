@@ -43,6 +43,17 @@ Use Clean Architecture as the engineering standard for every app.
 - Do not overengineer.
 - Optimize for maintainability, correctness, security, and testability.
 
+## Object-Oriented Programming
+
+- Use object-oriented programming when implementing application behavior.
+- Model related state and behavior together in focused classes.
+- Encapsulate internal state and expose only the operations each class needs.
+- Give each class one clear responsibility.
+- Prefer composition over inheritance.
+- Use interfaces and abstractions at architectural boundaries.
+- Do not create classes, inheritance hierarchies, or abstractions without a clear purpose.
+- Keep business rules inside domain objects or domain services, not in controllers or UI components.
+
 ## Architecture Rules
 
 - Point dependencies inward toward the Domain Layer.
