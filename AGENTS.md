@@ -24,6 +24,17 @@ Use Clean Architecture as the engineering standard for every app.
 - Use `execute` to combine independent tool calls.
 - Use session, worktree, and MCP tools only when they are available and relevant.
 
+## Communication
+
+- Write every response in clear, natural, basic English.
+- State the result first.
+- Explain only what the user needs to know.
+- Use short sentences.
+- Use clear headings when helpful.
+- Avoid unnecessary technical terms.
+- Explain technical terms when necessary.
+- State blockers, risks, and next steps clearly.
+
 ## Engineering Principles
 
 - Prefer simple, explicit, and unsurprising solutions over clever or hidden behavior.
