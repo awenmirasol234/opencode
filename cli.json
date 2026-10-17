@@ -3,35 +3,6 @@
   "session": {
     "sidebar": "hide",
     "scrollbar": true,
-    "markdown": "rendered",
-    "thinking": "hide",
-    "grouping": "none",
-    "verbosity": "low",
-    "image_preview": false,
-    "tps": false,
-    "new_location": "launch",
-    "permissions": "prompt"
-  },
-  "tabs": {
-    "mode": "on",
-    "scope": "cwd",
-    "layout": "horizontal",
-    "indicators": "status"
-  },
-  "diffs": {
-    "view": "split",
-    "wrap": "none",
-    "tree": true
-  },
-  "attention": {
-    "sound": true
-  },
-  "terminal": {
-    "title": true
-  },
-  "animations": true,
-  "theme": {
-    "mode": "dark",
-    "name": "opencode"
+    "tps": false
   }
 }
