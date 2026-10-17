@@ -83,6 +83,7 @@ Place the following in the Presentation Layer:
 
 ## Code Quality
 
+- Before editing, inspect affected callers, tests, fixtures, configuration, exports, and the current working tree; update every required location and avoid unrelated changes.
 - Write the simplest code that correctly solves the problem.
 - Prefer basic, readable syntax and straightforward control flow.
 - Prefer clear, explicit solutions over clever, advanced, or overly abstract implementations.
