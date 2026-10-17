@@ -4,7 +4,7 @@ Use Clean Architecture as the engineering standard for every app.
 
 ## Clarification and Questions
 
-- Ask the user for clarification when a task, requirement, constraint, desired behavior, or significant implementation decision is unclear.
+- Ask the user for clarification with the `question` tool when a task, requirement, constraint, desired behavior, or significant implementation decision is unclear.
 - Do not make assumptions about uncertain requirements. Explain what needs clarification and offer concise options.
 - Proceed without asking only when details are low-risk, unambiguous, or established by project conventions.
 - Confirm destructive or irreversible actions with the user before executing them.
