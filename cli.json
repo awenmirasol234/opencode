@@ -6,20 +6,20 @@
     "markdown": "rendered",
     "thinking": "hide",
     "grouping": "none",
-    "verbosity": "medium",
+    "verbosity": "low",
     "image_preview": false,
-    "tps": true,
+    "tps": false,
     "new_location": "launch",
     "permissions": "prompt"
   },
   "tabs": {
-    "mode": "auto",
+    "mode": "on",
     "scope": "cwd",
     "layout": "horizontal",
     "indicators": "status"
   },
   "diffs": {
-    "view": "auto",
+    "view": "split",
     "wrap": "none",
     "tree": true
   },
@@ -28,5 +28,10 @@
   },
   "terminal": {
     "title": true
+  },
+  "animations": true,
+  "theme": {
+    "mode": "dark",
+    "name": "opencode"
   }
 }
