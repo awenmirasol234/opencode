@@ -144,6 +144,18 @@ Place the following in the Presentation Layer:
 - Mark incomplete work with `TODO` or `FIXME`.
 - Do not use emojis in code, comments, documentation, or commit messages.
 
+## Senior-Level Coding Principles
+
+- Prioritize readability so other developers can understand the code quickly.
+- Give each function one clear purpose.
+- Reuse logic only when it represents the same behavior.
+- Keep implementations simple and avoid unnecessary abstractions.
+- Handle errors explicitly. Do not silently ignore failures.
+- Use meaningful names, such as `calculateTotalPrice()` instead of `calc()`.
+- Follow the existing architecture, patterns, and conventions.
+- Test important behavior, including normal cases, edge cases, and failure scenarios.
+- Preserve existing functionality. Make targeted changes and avoid unrelated rewrites.
+
 ## Testing
 
 - Test important business rules, use cases, critical behavior, and edge cases.
