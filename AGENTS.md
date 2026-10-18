@@ -103,6 +103,16 @@ Place the following in the Presentation Layer:
 - Loading, error, and success states
 - User feedback and presentation logic
 
+## Validation
+
+- Validate all untrusted input at system boundaries before processing it.
+- Require every field that the use case needs.
+- Check input types, formats, lengths, ranges, and allowed values.
+- Keep business validation rules in the Domain Layer.
+- Sanitize input before storing it or rendering it in a user interface.
+- Return clear validation errors without exposing secrets or sensitive data.
+- Test valid, invalid, missing, and boundary values.
+
 ## Code Quality
 
 - Before editing, inspect affected callers, tests, fixtures, configuration, exports, and the current working tree; update every required location and avoid unrelated changes.
