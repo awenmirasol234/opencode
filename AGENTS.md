@@ -116,6 +116,7 @@ Place the following in the Presentation Layer:
 ## Code Quality
 
 - Do not use ternary operators or conditional expressions. Use clear `if`/`else` statements instead.
+- Avoid clever one-liners when they make the logic harder to understand. Write clear, readable statements instead.
 - Before editing, inspect affected callers, tests, fixtures, configuration, exports, and the current working tree; update every required location and avoid unrelated changes.
 - Write the simplest code that correctly solves the problem.
 - Prefer basic, readable syntax and straightforward control flow.
