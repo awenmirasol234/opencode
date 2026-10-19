@@ -140,10 +140,6 @@ Place the following in the Presentation Layer:
 - Mark incomplete work with `TODO` or `FIXME`.
 - Do not use emojis in code, comments, documentation, or commit messages.
 
-## Senior-Level Coding Principles
-
-- Handle errors explicitly. Do not silently ignore failures.
-
 ## Testing
 
 - Test important business rules, use cases, critical behavior, and edge cases.
