@@ -5,7 +5,7 @@ description: Containerize and deploy full-stack applications with Docker Compose
 
 # Docker Full-Stack Deployment
 
-Use this skill when adding or reviewing Docker deployment for a full-stack application.
+Apply this skill when you add or review Docker deployment for a full-stack application.
 
 ## Workflow
 
@@ -13,15 +13,15 @@ Use this skill when adding or reviewing Docker deployment for a full-stack appli
 
 2. **Document configuration.** Add or update a committed `.env.example` with required and optional variables. Keep real `.env` files, credentials, tokens, certificates, and private keys out of Git. Never put secrets in Dockerfiles, image layers, frontend code, or build arguments.
 
-3. **Create only the required services.** Use separate services for `nginx`, `frontend`, `backend`, `db`, and other required dependencies when they are needed. A static SPA may use a frontend build stage with Nginx serving the output instead of a redundant frontend runtime container.
+3. **Create only the required services.** Define separate services for `nginx`, `frontend`, `backend`, `db`, and other required dependencies when needed. Serve a static SPA from an Nginx frontend build stage instead of adding a redundant frontend runtime container.
 
-4. **Use simple Dockerfiles.** Prefer multi-stage builds, narrow build contexts, non-root runtime users where supported, and existing project commands. Add `.dockerignore` rules for dependencies, build output, local environment files, and secrets.
+4. **Create simple Dockerfiles.** Use multi-stage builds, narrow build contexts, non-root runtime users where supported, and existing project commands. Add `.dockerignore` rules for dependencies, build output, local environment files, and secrets.
 
-5. **Configure Compose networking and ports.** Use descriptive service names and the default Compose project name. Services communicate through the Compose network using service names, not `localhost`; for example, the backend connects to `db:5432`. Publish only Nginx's port to the host. Do not publish backend, database, cache, worker, or admin ports, and do not use `container_name`.
+5. **Configure Compose networking and ports.** Use descriptive service names and the default Compose project name. Connect services through the Compose network by using service names, not `localhost`; for example, connect the backend to `db:5432`. Publish only Nginx's port to the host. Do not publish backend, database, cache, worker, or admin ports. Do not set `container_name`.
 
    Use framework-default internal ports where possible.
 
-6. **Use Nginx as the only entry point.** Nginx serves frontend assets or proxies requests to an internal frontend runtime, and proxies `/api/` to `backend`. Do not expose database routes or private service names.
+6. **Use Nginx as the only entry point.** Serve frontend assets from Nginx or proxy requests to an internal frontend runtime. Proxy `/api/` to `backend`. Do not expose database routes or private service names.
 
    For a client-side routed SPA served by Nginx, keep the `/api/` location more specific than the SPA fallback:
 
@@ -41,31 +41,31 @@ Use this skill when adding or reviewing Docker deployment for a full-stack appli
        condition: service_healthy
    ```
 
-   `depends_on` controls startup order, not recovery. Applications must still handle temporary dependency failures. Run migrations using the project's supported command and fail clearly if they fail.
+    Treat `depends_on` as startup ordering, not recovery. Make applications handle temporary dependency failures. Run migrations with the project's supported command and fail clearly when they fail.
 
-8. **Keep deployment configuration focused.** Normally provide only Dockerfiles, `compose.yaml`, Nginx configuration, `.dockerignore`, `.env.example`, and brief deployment documentation. Keep Docker setup files comment-free; use clear names and structure instead. Do not add services, scripts, or orchestration features without a clear need.
+8. **Keep deployment configuration focused.** Provide only Dockerfiles, `compose.yaml`, Nginx configuration, `.dockerignore`, `.env.example`, and brief deployment documentation unless the project needs more. Keep Docker setup files comment-free. Use clear names and structure. Do not add services, scripts, or orchestration features without a clear need.
 
-9. **Verify the complete stack.** Run the following checks:
+9. **Verify the complete stack.** Run these checks:
 
-   - `docker compose config` has no missing variables, accidental ports, or exposed secrets.
-   - All expected containers start and become healthy.
-   - Backend migrations and database connectivity work through the Compose service name.
-   - Frontend pages and static assets load through the Nginx host port.
-   - `/api/` reaches the backend through Nginx.
-   - SPA deep links work after a direct browser refresh when applicable.
-   - A representative application workflow succeeds through Nginx.
-   - Only the Nginx host port is published.
+   - Confirm that `docker compose config` reports no missing variables, accidental ports, or exposed secrets.
+   - Confirm that all expected containers start and become healthy.
+   - Verify backend migrations and database connectivity through the Compose service name.
+   - Verify that frontend pages and static assets load through the Nginx host port.
+   - Verify that `/api/` reaches the backend through Nginx.
+   - Verify that SPA deep links work after a direct browser refresh when applicable.
+   - Complete a representative application workflow through Nginx.
+   - Confirm that only the Nginx host port is published.
 
-   Report checks that could not run. Do not claim the deployment is verified from YAML validation alone.
+    Report every check that you could not run. Do not claim deployment verification from YAML validation alone.
 
 ## Verification checklist
 
-- [ ] `.env.example` documents required and optional configuration.
-- [ ] Real secrets are excluded from source control and images.
-- [ ] Services use Compose DNS names and internal ports.
-- [ ] Only Nginx is exposed to the host.
-- [ ] The database has persistence and no direct host access.
-- [ ] Nginx serves or routes frontend pages and proxies API requests.
-- [ ] SPA fallback is configured when required.
-- [ ] Health checks and readiness conditions are configured where applicable.
-- [ ] The complete stack and one representative workflow were tested.
+- [ ] Document required and optional configuration in `.env.example`.
+- [ ] Exclude real secrets from source control and images.
+- [ ] Use Compose DNS names and internal ports for services.
+- [ ] Expose only Nginx to the host.
+- [ ] Persist database data without providing direct host access.
+- [ ] Serve or route frontend pages through Nginx and proxy API requests.
+- [ ] Configure SPA fallback when required.
+- [ ] Configure health checks and readiness conditions where applicable.
+- [ ] Test the complete stack and one representative workflow.
