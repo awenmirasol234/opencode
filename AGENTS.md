@@ -72,36 +72,36 @@ Use Clean Architecture as the engineering standard for every app.
 
 Place the following in the Domain Layer:
 
-- Use cases and application workflows
-- Core entities and value objects
-- Business rules and validation
-- Repository interface contracts
-- Domain-level errors and exceptions
-- Business logic independent of UI and data sources
+- Place use cases and application workflows in the Domain Layer.
+- Place core entities and value objects in the Domain Layer.
+- Place business rules and validation in the Domain Layer.
+- Place repository interface contracts in the Domain Layer.
+- Place domain-level errors and exceptions in the Domain Layer.
+- Place business logic independent of UI and data sources in the Domain Layer.
 
 ## Data Layer
 
 Place the following in the Data Layer:
 
-- Repository implementations
-- API clients and service adapters
-- Local database and cache handling
-- Data models and DTOs
-- Data mapping and serialization
-- Remote and local data sources
-- Third-party service integrations
+- Place repository implementations in the Data Layer.
+- Place API clients and service adapters in the Data Layer.
+- Place local database and cache handling in the Data Layer.
+- Place data models and DTOs in the Data Layer.
+- Place data mapping and serialization in the Data Layer.
+- Place remote and local data sources in the Data Layer.
+- Place third-party service integrations in the Data Layer.
 
 ## Presentation Layer
 
 Place the following in the Presentation Layer:
 
-- Screens and UI components
-- Navigation and routing
-- ViewModels and state management
-- Responsive and adaptive layouts
-- User input handling
-- Loading, error, and success states
-- User feedback and presentation logic
+- Place screens and UI components in the Presentation Layer.
+- Place navigation and routing in the Presentation Layer.
+- Place ViewModels and state management in the Presentation Layer.
+- Place responsive and adaptive layouts in the Presentation Layer.
+- Place user input handling in the Presentation Layer.
+- Place loading, error, and success states in the Presentation Layer.
+- Place user feedback and presentation logic in the Presentation Layer.
 
 ## Validation
 
@@ -119,9 +119,7 @@ Place the following in the Presentation Layer:
 - Avoid clever one-liners when they make the logic harder to understand. Write clear, readable statements instead.
 - Use early returns when they simplify complex business logic.
 - Before editing, inspect affected callers, tests, fixtures, configuration, exports, and the current working tree; update every required location and avoid unrelated changes.
-- Write the simplest code that correctly solves the problem.
-- Prefer basic, readable syntax and straightforward control flow.
-- Prefer clear, explicit solutions over clever, advanced, or overly abstract implementations.
+- Use basic, readable syntax and straightforward control flow.
 - Keep each function, class, and module focused on one responsibility.
 - Use clear, descriptive names.
 - Avoid single- or two-letter variables unless they are conventional and clear.
@@ -129,8 +127,6 @@ Place the following in the Presentation Layer:
 - Use `camelCase` for variables, functions, and methods.
 - Use `UPPER_SNAKE_CASE` for constants.
 - Use `kebab-case` for files and directories unless project conventions differ.
-- Avoid unnecessary abstractions, design patterns, wrappers, helper functions, and dependencies.
-- Add abstractions only when they provide clear value.
 - Reuse existing utilities, dependencies, and implementations when appropriate.
 - Remove dead code when safe.
 - Avoid deeply nested conditions and unnecessarily complex logic.
@@ -146,15 +142,7 @@ Place the following in the Presentation Layer:
 
 ## Senior-Level Coding Principles
 
-- Prioritize readability so other developers can understand the code quickly.
-- Give each function one clear purpose.
-- Reuse logic only when it represents the same behavior.
-- Keep implementations simple and avoid unnecessary abstractions.
 - Handle errors explicitly. Do not silently ignore failures.
-- Use meaningful names, such as `calculateTotalPrice()` instead of `calc()`.
-- Follow the existing architecture, patterns, and conventions.
-- Test important behavior, including normal cases, edge cases, and failure scenarios.
-- Preserve existing functionality. Make targeted changes and avoid unrelated rewrites.
 
 ## Testing
 
