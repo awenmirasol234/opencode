@@ -7,6 +7,8 @@ description: Build or improve a safe, modular Python deployment runner for Docke
 
 Apply this skill when you create or improve a Python deployment system for a Docker Compose application.
 
+## Usage
+
 Launch the deployment with:
 
 ```bash
@@ -44,9 +46,13 @@ Give each module one clear responsibility. Keep all orchestration in `deploy.py`
 
 ### 1. Initialize the logger
 
-Initialize terminal and file logging. Record timestamps, stages, command results, errors, and final results. Preserve logs between executions.
+- Initialize terminal and file logging.
+- Record timestamps, stages, command results, errors, and final results.
+- Preserve logs between executions.
+- Never log secret values, passwords, tokens, private keys, or complete environment contents.
+- Redact sensitive command output.
 
-Never log secret values, passwords, tokens, private keys, or complete environment contents. Redact sensitive command output.
+#### Format terminal output
 
 Use this readable terminal format:
 
@@ -68,53 +74,68 @@ Use this readable terminal format:
 [INFO] Pulling db image...
 ```
 
-Use these message levels consistently:
+#### Use message levels consistently
 
-- `[INFO]` for stages and progress messages.
-- `[ OK ]` for an individual successful check or action.
-- `[PASS]` for a completed stage.
-- `[WARN]` for a non-fatal warning.
-- `[FAIL]` for a failed check, action, or stage.
+- Use `[INFO]` for stages and progress messages.
+- Use `[ OK ]` for an individual successful check or action.
+- Use `[PASS]` for a completed stage.
+- Use `[WARN]` for a non-fatal warning.
+- Use `[FAIL]` for a failed check, action, or stage.
 
-Use ANSI colors only for interactive terminal output:
+#### Apply terminal colors safely
 
-- `[INFO]` and stage headings: cyan or blue.
-- `[ OK ]` and `[PASS]`: green.
-- `[WARN]`: yellow.
-- `[FAIL]`: red.
-
-Keep file logs uncolored and include timestamps in them. Disable terminal colors when output is not a TTY or when the `NO_COLOR` environment variable is set. Keep colors and terminal formatting from affecting exit codes or log content.
+- Use ANSI colors only for interactive terminal output.
+- Use cyan or blue for `[INFO]` and stage headings.
+- Use green for `[ OK ]` and `[PASS]`.
+- Use yellow for `[WARN]`.
+- Use red for `[FAIL]`.
+- Keep file logs uncolored and include timestamps in them.
+- Disable terminal colors when output is not a TTY or when the `NO_COLOR` environment variable is set.
+- Keep colors and terminal formatting from affecting exit codes or log content.
 
 ### 2. Run preflight checks
 
-Validate required tools, Docker, Docker Compose, Compose configuration, required environment variable names, permissions, disk space, and project-specific prerequisites.
-
-Stop immediately when a required check fails. Do not deploy or roll back. Run safe cleanup, generate the final summary, and return a nonzero exit code.
+- Validate required tools, Docker, Docker Compose, Compose configuration, required environment variable names, permissions, disk space, and project-specific prerequisites.
+- Stop immediately when a required check fails.
+- Do not deploy or roll back after a required check fails.
+- Run safe cleanup, generate the final summary, and return a nonzero exit code.
 
 ### 3. Create backups
 
-Back up the database when supported, along with required configuration or recovery files. Use unique timestamped locations. Preserve existing backups. Verify successful completion. Never overwrite the only valid backup.
-
-Stop immediately when a required backup fails. Do not deploy or roll back. Preserve all recovery files, run safe cleanup, generate the final summary, and return a nonzero exit code.
+- Back up the database when supported, along with required configuration or recovery files.
+- Use unique timestamped locations.
+- Preserve existing backups.
+- Verify successful completion.
+- Never overwrite the only valid backup.
+- Stop immediately when a required backup fails.
+- Do not deploy or roll back after a required backup fails.
+- Preserve all recovery files, run safe cleanup, generate the final summary, and return a nonzero exit code.
 
 ### 4. Validate Compose
 
-Validate the Docker Compose configuration before changing running services. Keep this validation in `scripts/deployment.py`. Stop when validation fails.
+- Validate the Docker Compose configuration before changing running services.
+- Keep this validation in `scripts/deployment.py`.
+- Stop when validation fails.
 
 ### 5. Deploy the application
 
-Deploy with the project’s Docker Compose configuration. Capture command output and exit codes. Record failures. Avoid destructive Docker commands. Treat deployment failures as rollback-triggering failures.
+- Deploy with the project’s Docker Compose configuration.
+- Capture command output and exit codes.
+- Record failures.
+- Avoid destructive Docker commands.
+- Treat deployment failures as rollback-triggering failures.
 
 ### 6. Run health checks
 
-Verify applicable container status, Nginx availability, backend API availability, and representative application functionality. Skip checks for services the project does not use. Use configurable timeouts, retry limits, polling intervals, endpoints, and expected responses.
-
-Trigger rollback when required health checks fail.
+- Verify applicable container status, Nginx availability, backend API availability, and representative application functionality.
+- Skip checks for services the project does not use.
+- Use configurable timeouts, retry limits, polling intervals, endpoints, and expected responses.
+- Trigger rollback when required health checks fail.
 
 ### 7. Roll back when required
 
-Restore the previous working application version after a deployment or health-check failure. Use preserved recovery artifacts.
-
+- Restore the previous working application version after a deployment or health-check failure.
+- Use preserved recovery artifacts.
 - Restore database backups only when explicitly required and safely supported.
 - Verify application health after rollback.
 - Preserve backups, rollback files, logs, and diagnostics.
@@ -123,27 +144,21 @@ Restore the previous working application version after a deployment or health-ch
 
 ### 8. Clean up safely
 
-Remove only eligible temporary files and resources. Never remove Docker volumes, persistent application or database data, backups, recovery files, deployment logs, or resources required for rollback.
-
-Never use destructive Docker cleanup commands that can remove persistent data. Attempt cleanup after successful and failed executions.
+- Remove only eligible temporary files and resources.
+- Never remove Docker volumes, persistent application or database data, backups, recovery files, deployment logs, or resources required for rollback.
+- Never use destructive Docker cleanup commands that can remove persistent data.
+- Attempt cleanup after successful and failed executions.
 
 ### 9. Report the result
 
-Generate a summary for every outcome. Include:
-
-- Final deployment status
-- Completed and failed stages
-- Health-check results
-- Rollback outcome
-- Cleanup outcome
-- Relevant errors
-- Backup and log locations
-
-Run final reporting after preflight failures, backup failures, validation failures, deployment failures, health-check failures, rollback failures, and unexpected exceptions.
+- Generate a summary for every outcome.
+- Include the final deployment status, completed and failed stages, health-check results, rollback outcome, cleanup outcome, relevant errors, and backup and log locations.
+- Run final reporting after preflight failures, backup failures, validation failures, deployment failures, health-check failures, rollback failures, and unexpected exceptions.
 
 ### 10. Exit
 
-Return exit code `0` only when deployment and required health checks succeed. Return a nonzero exit code for every required failure, failed rollback, or unexpected exception.
+- Return exit code `0` only when deployment and required health checks succeed.
+- Return a nonzero exit code for every required failure, failed rollback, or unexpected exception.
 
 ## Orchestration and failure handling
 
@@ -161,7 +176,7 @@ initialize logger
   -> exit
 ```
 
-Failure behavior:
+### Handle failures
 
 - Stop normal deployment after a required stage fails.
 - Skip rollback when preflight or backup fails because no deployment changes were made.

@@ -11,29 +11,58 @@ Do not apply this skill to frontend/backend/Nginx stacks. Apply `docker-full-sta
 
 ## Workflow
 
-1. **Inspect the application first.** Identify the runtime version, package manager, build and start commands, port, health endpoint, environment variables, secrets, and persistence requirements.
+### 1. Inspect the application
 
-2. **Document configuration.** Add or update a committed `.env.example` with required and optional variables. Keep real `.env` files, credentials, tokens, certificates, and private keys out of Git. Never put secrets in Dockerfiles, image layers, frontend code, or build arguments.
+- Identify the runtime version, package manager, build and start commands, port, health endpoint, environment variables, secrets, and persistence requirements.
 
-3. **Create one service.** Define a single `app` service. Add a `db` service only when the project requires a database. Do not add Nginx, workers, caches, or admin tools without a clear need.
+### 2. Document configuration
 
-4. **Create a simple Dockerfile.** Use a multi-stage build when a build step is required. Use a narrow build context, a non-root runtime user where supported, and existing project commands. Add `.dockerignore` rules for dependencies, build output, local environment files, and secrets.
+- Add or update a committed `.env.example` with required and optional variables.
+- Keep real `.env` files, credentials, tokens, certificates, and private keys out of Git.
+- Never put secrets in Dockerfiles, image layers, frontend code, or build arguments.
 
-5. **Configure ports and persistence.** Use the framework-default internal port where possible. Publish only the `app` port to the host. Do not publish the database port or set `container_name`. Add a named volume for database data or other required persistence.
+### 3. Create one service
 
-6. **Add readiness checks.** Add a health check for the application when a reliable `/health` or `/ready` endpoint exists. Use a native database check when a `db` service exists. Make checks compatible with the image; do not assume `curl` or `wget` exists. Treat `depends_on` as startup ordering, not recovery. Make the application handle temporary database failures.
+- Define a single `app` service.
+- Add a `db` service only when the project requires a database.
+- Do not add Nginx, workers, caches, or admin tools without a clear need.
 
-7. **Keep deployment configuration focused.** Provide only a Dockerfile, `compose.yaml`, `.dockerignore`, `.env.example`, and brief run documentation unless the project needs more. Keep Docker setup files comment-free. Use clear names and structure.
+### 4. Create a simple Dockerfile
 
-8. **Verify the deployment.** Run these checks:
+- Use a multi-stage build when a build step is required.
+- Use a narrow build context, a non-root runtime user where supported, and existing project commands.
+- Add `.dockerignore` rules for dependencies, build output, local environment files, and secrets.
 
-   - Confirm that `docker compose config` reports no missing variables, accidental ports, or exposed secrets.
-   - Confirm that all expected containers start and become healthy.
-   - Verify that the application responds on the published host port.
-   - Verify database connectivity and persistence when a `db` service exists.
-   - Complete a representative application workflow.
+### 5. Configure ports and persistence
 
-    Report every check that you could not run. Do not claim deployment verification from YAML validation alone.
+- Use the framework-default internal port where possible.
+- Publish only the `app` port to the host.
+- Do not publish the database port or set `container_name`.
+- Add a named volume for database data or other required persistence.
+
+### 6. Add readiness checks
+
+- Add a health check for the application when a reliable `/health` or `/ready` endpoint exists.
+- Use a native database check when a `db` service exists.
+- Make checks compatible with the image; do not assume `curl` or `wget` exists.
+- Treat `depends_on` as startup ordering, not recovery.
+- Make the application handle temporary database failures.
+
+### 7. Keep deployment configuration focused
+
+- Provide only a Dockerfile, `compose.yaml`, `.dockerignore`, `.env.example`, and brief run documentation unless the project needs more.
+- Keep Docker setup files comment-free.
+- Use clear names and structure.
+
+### 8. Verify the deployment
+
+- Confirm that `docker compose config` reports no missing variables, accidental ports, or exposed secrets.
+- Confirm that all expected containers start and become healthy.
+- Verify that the application responds on the published host port.
+- Verify database connectivity and persistence when a `db` service exists.
+- Complete a representative application workflow.
+
+Report every check that you could not run. Do not claim deployment verification from YAML validation alone.
 
 ## Verification checklist
 
