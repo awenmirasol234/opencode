@@ -54,24 +54,26 @@ Give each module one clear responsibility. Keep all orchestration in `deploy.py`
 
 #### Format terminal output
 
+Use complete, natural-language sentences. Explain the action or result clearly and avoid unexplained technical shorthand.
+
 Use this readable terminal format:
 
 ```text
-[INFO] Starting Docker deployment...
+[INFO] Starting the Docker deployment.
 
-[INFO] Step 1: Preflight check...
+[INFO] Running preflight checks.
 [ OK ] Docker is running.
 [ OK ] Docker Compose is available.
-[ OK ] .env file found.
-[PASS] Preflight check passed.
+[ OK ] The environment file was found.
+[PASS] Preflight checks completed successfully.
 
-[INFO] Step 2: Backup...
-[ OK ] Database backup saved.
-[ OK ] Configuration files backed up.
-[PASS] Backup complete: backups/backup_20261011_092119
+[INFO] Creating backups.
+[ OK ] The database backup was saved.
+[ OK ] The configuration files were backed up.
+[PASS] Backups were created at backups/backup_20261011_092119.
 
-[INFO] Step 3: Deploy...
-[INFO] Pulling db image...
+[INFO] Deploying the application.
+[INFO] Pulling the database image.
 ```
 
 #### Use message levels consistently
@@ -81,6 +83,8 @@ Use this readable terminal format:
 - Use `[PASS]` for a completed stage.
 - Use `[WARN]` for a non-fatal warning.
 - Use `[FAIL]` for a failed check, action, or stage.
+- Write every message as a clear sentence that describes the action or result.
+- Do not expose secrets or include unexplained raw command output in user-facing messages.
 
 #### Apply terminal colors safely
 
