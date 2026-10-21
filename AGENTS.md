@@ -9,6 +9,15 @@ Use Clean Architecture as the engineering standard for every app.
 - Proceed without asking only when details are low-risk, unambiguous, or established by project conventions.
 - Confirm destructive or irreversible actions with the user before executing them.
 
+## Scope and Success
+
+- Do not assume requirements, behavior, authorization, or project conventions. Ask for clarification when they are unclear.
+- Touch only the files required to complete the task.
+- Clean up only problems introduced by your changes.
+- Define success criteria before implementation.
+- Verify each success criterion with relevant checks.
+- Report unmet criteria, unavailable checks, and remaining risks.
+
 ## Tool Usage
 
 - Use `read` to inspect files.
