@@ -51,17 +51,33 @@ Give each module one responsibility. Keep all orchestration in `deploy.py`.
 
 Run these stages in order:
 
-```text
-initialize logger
-  -> run preflight checks
-  -> create backups
-  -> validate Compose
-  -> deploy
-  -> run health checks
-  -> clean up safely
-  -> report the result
-  -> exit
+```mermaid
+flowchart TD
+    A[Initialize logger] --> B[Run preflight checks]
+
+    B -->|Pass| C[Create backups]
+    B -->|Fail| K[Clean up safely]
+
+    C -->|Pass| D[Validate Compose]
+    C -->|Fail| K
+
+    D -->|Pass| E[Deploy application]
+    D -->|Fail| K
+
+    E -->|Pass| F[Run health checks]
+    E -->|Fail| H[Rollback]
+
+    F -->|Pass| K
+    F -->|Fail| H
+
+    H --> I[Verify rollback outcome]
+    I --> K
+
+    K --> L[Report final result]
+    L --> M[Exit]
 ```
+
+Send an unexpected exception to rollback when deployment may have started. Otherwise, send it to cleanup. Send both paths to final reporting.
 
 ### 1. Initialize logging
 
@@ -192,6 +208,7 @@ Apply terminal colors safely:
 - Attempt rollback after an unexpected exception if deployment may have started.
 - Handle command failures and unexpected exceptions explicitly.
 - Use simple, consistent return values or exceptions between modules.
+- Send rollback success and rollback failure through cleanup.
 - Preserve the original failure when rollback or cleanup also fails.
 - Always run cleanup and final reporting from a protected finalization path.
 
