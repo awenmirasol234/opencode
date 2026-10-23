@@ -230,7 +230,8 @@ Apply terminal colors safely:
 - Keep functions focused and names descriptive.
 - Follow existing project conventions.
 - Keep environment-specific configuration outside source code.
-- Add comments only for non-obvious safety behavior.
+- Add short comments only where code is hard to understand or its behavior is not obvious, especially for safety-related decisions.
+- Do not comment obvious operations or repeat what the code already says.
 - Do not suppress errors, weaken tests, or remove assertions to obtain a passing result.
 - Prefer the smallest complete implementation over a flexible or general-purpose design.
 
