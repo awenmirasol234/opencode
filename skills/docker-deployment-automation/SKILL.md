@@ -5,28 +5,33 @@ description: Build or improve a safe, modular Python deployment runner for Docke
 
 # Docker Deployment Automation
 
-Apply this skill when you create or improve a Python deployment system for a Docker Compose application.
+Build or improve a simple Python deployment runner for a Docker Compose application.
+
+Keep the implementation small and explicit. Add only code required for the project and this deployment flow. Do not add frameworks, dependencies, abstraction layers, or configuration systems without a clear need.
 
 ## Usage
 
-Launch the deployment with:
+Run the deployment from PowerShell or a Unix shell with:
 
 ```bash
 python deploy.py
 ```
 
+Use Python and standard library features for cross-platform behavior. Use `pathlib` for paths and `subprocess` with argument lists and `shell=False` for commands. Do not use Bash-only syntax, shell scripts, Unix-only paths, or platform-specific command chaining.
+
 ## Before changing
 
-Before you implement anything:
+Before writing code:
 
-- Inspect the project structure, technologies, Compose files, scripts, environment variables, secrets, databases, services, and health endpoints.
-- Reuse existing scripts and configuration where appropriate.
-- Preserve existing functionality and avoid unrelated changes.
-- If the project is empty, create the required structure.
-- Do not invent database, Nginx, API, or health-check commands that the project does not support.
-- Treat external configuration and environment values as untrusted input. Fail safely instead of guessing when project behavior is unclear.
+- Inspect the project structure, technology stack, Compose files, scripts, environment variables, secrets, databases, services, and health endpoints.
+- Reuse existing scripts and configuration.
+- Preserve existing behavior and touch only required files.
+- Create the required structure only when the project does not already provide it.
+- Do not invent database, Nginx, API, or health-check commands.
+- Treat environment values and external configuration as untrusted input.
+- Fail safely when project behavior is unclear instead of guessing.
 
-## Required structure
+## Create the required structure
 
 ```text
 deploy.py
@@ -40,23 +45,37 @@ scripts/
     cleanup.py
 ```
 
-Give each module one clear responsibility. Keep all orchestration in `deploy.py`.
+Give each module one responsibility. Keep all orchestration in `deploy.py`.
 
 ## Deployment flow
 
-### 1. Initialize the logger
+Run these stages in order:
+
+```text
+initialize logger
+  -> run preflight checks
+  -> create backups
+  -> validate Compose
+  -> deploy
+  -> run health checks
+  -> clean up safely
+  -> report the result
+  -> exit
+```
+
+### 1. Initialize logging
 
 - Initialize terminal and file logging.
-- Record timestamps, stages, command results, errors, and final results.
 - Preserve logs between executions.
+- Record timestamps, stages, command results, errors, and final results.
 - Never log secret values, passwords, tokens, private keys, or complete environment contents.
-- Redact sensitive command output.
+- Redact sensitive command output before displaying or storing it.
 
 #### Format terminal output
 
-Use complete, natural-language sentences. Explain the action or result clearly and avoid unexplained technical shorthand.
+Write complete, natural-language sentences. Explain each action or result. Avoid unexplained shorthand.
 
-Use this readable terminal format:
+Use this format:
 
 ```text
 [INFO] Starting the Docker deployment.
@@ -76,65 +95,66 @@ Use this readable terminal format:
 [INFO] Pulling the database image.
 ```
 
-#### Use message levels consistently
+Use message levels consistently:
 
 - Use `[INFO]` for stages and progress messages.
 - Use `[ OK ]` for an individual successful check or action.
 - Use `[PASS]` for a completed stage.
 - Use `[WARN]` for a non-fatal warning.
 - Use `[FAIL]` for a failed check, action, or stage.
-- Write every message as a clear sentence that describes the action or result.
-- Do not expose secrets or include unexplained raw command output in user-facing messages.
+- Write every message as a clear sentence.
+- Do not expose secrets or unexplained raw command output.
 
-#### Apply terminal colors safely
+Apply terminal colors safely:
 
 - Use ANSI colors only for interactive terminal output.
 - Use cyan or blue for `[INFO]` and stage headings.
 - Use green for `[ OK ]` and `[PASS]`.
 - Use yellow for `[WARN]`.
 - Use red for `[FAIL]`.
-- Keep file logs uncolored and include timestamps in them.
-- Disable terminal colors when output is not a TTY or when the `NO_COLOR` environment variable is set.
-- Keep colors and terminal formatting from affecting exit codes or log content.
+- Keep file logs uncolored and timestamped.
+- Disable colors when output is not a TTY or when `NO_COLOR` is set.
+- Keep colors and formatting out of exit codes and file log content.
 
 ### 2. Run preflight checks
 
-- Validate required tools, Docker, Docker Compose, Compose configuration, required environment variable names, permissions, disk space, and project-specific prerequisites.
+- Check required tools, Docker, Docker Compose, Compose configuration, required environment variable names, permissions, disk space, and project-specific prerequisites.
+- Detect the available Docker Compose command without assuming a shell or operating system.
 - Stop immediately when a required check fails.
-- Do not deploy or roll back after a required check fails.
-- Run safe cleanup, generate the final summary, and return a nonzero exit code.
+- Do not deploy or roll back after a preflight failure.
+- Run safe cleanup, report the result, and return a nonzero exit code.
 
 ### 3. Create backups
 
-- Back up the database when supported, along with required configuration or recovery files.
-- Use unique timestamped locations.
-- Preserve existing backups.
-- Verify successful completion.
+- Back up the database when the project supports it.
+- Back up required configuration and recovery files.
+- Use unique timestamped locations and preserve existing backups.
+- Verify every required backup.
 - Never overwrite the only valid backup.
 - Stop immediately when a required backup fails.
-- Do not deploy or roll back after a required backup fails.
-- Preserve all recovery files, run safe cleanup, generate the final summary, and return a nonzero exit code.
+- Do not deploy or roll back after a backup failure.
+- Preserve recovery files, run safe cleanup, report the result, and return a nonzero exit code.
 
 ### 4. Validate Compose
 
 - Validate the Docker Compose configuration before changing running services.
-- Keep this validation in `scripts/deployment.py`.
-- Stop when validation fails.
+- Keep Compose validation in `scripts/deployment.py`.
+- Stop when validation fails. Do not roll back because no deployment change has occurred.
 
 ### 5. Deploy the application
 
-- Deploy with the project’s Docker Compose configuration.
-- Capture command output and exit codes.
-- Record failures.
+- Deploy with the project’s Compose configuration.
+- Pass commands as argument lists and capture output and exit codes.
+- Record failures without exposing secrets.
 - Avoid destructive Docker commands.
 - Treat deployment failures as rollback-triggering failures.
 
 ### 6. Run health checks
 
-- Verify applicable container status, Nginx availability, backend API availability, and representative application functionality.
+- Check applicable container status, Nginx availability, backend API availability, and representative application behavior.
 - Skip checks for services the project does not use.
-- Use configurable timeouts, retry limits, polling intervals, endpoints, and expected responses.
-- Trigger rollback when required health checks fail.
+- Read timeouts, retry limits, polling intervals, endpoints, and expected responses from the project’s existing configuration.
+- Trigger rollback when a required health check fails.
 
 ### 7. Roll back when required
 
@@ -143,75 +163,59 @@ Use this readable terminal format:
 - Restore database backups only when explicitly required and safely supported.
 - Verify application health after rollback.
 - Preserve backups, rollback files, logs, and diagnostics.
-- Do not claim rollback succeeded without successful recovery and verification.
+- Do not claim rollback success without recovery and verification.
 - Report rollback failures and return a nonzero exit code.
 
 ### 8. Clean up safely
 
 - Remove only eligible temporary files and resources.
-- Never remove Docker volumes, persistent application or database data, backups, recovery files, deployment logs, or resources required for rollback.
+- Never remove Docker volumes, persistent application or database data, backups, recovery files, deployment logs, or rollback resources.
 - Never use destructive Docker cleanup commands that can remove persistent data.
 - Attempt cleanup after successful and failed executions.
 
 ### 9. Report the result
 
 - Generate a summary for every outcome.
-- Include the final deployment status, completed and failed stages, health-check results, rollback outcome, cleanup outcome, relevant errors, and backup and log locations.
-- Run final reporting after preflight failures, backup failures, validation failures, deployment failures, health-check failures, rollback failures, and unexpected exceptions.
+- Include deployment status, completed and failed stages, health-check results, rollback outcome, cleanup outcome, relevant errors, and backup and log locations.
+- Run final reporting after every failure, including unexpected exceptions.
 
 ### 10. Exit
 
 - Return exit code `0` only when deployment and required health checks succeed.
 - Return a nonzero exit code for every required failure, failed rollback, or unexpected exception.
 
-## Orchestration and failure handling
-
-Use `deploy.py` as the only orchestration entry point:
-
-```text
-initialize logger
-  -> preflight
-  -> backup
-  -> validate Compose
-  -> deploy
-  -> health checks
-  -> cleanup
-  -> final summary
-  -> exit
-```
-
-### Handle failures
+## Failure handling
 
 - Stop normal deployment after a required stage fails.
-- Skip rollback when preflight or backup fails because no deployment changes were made.
-- Do not roll back Compose validation failures because validation occurs before deployment changes.
+- Skip rollback after preflight, backup, or Compose validation failures because no service change has occurred.
 - Attempt rollback after deployment or health-check failures.
-- When an unexpected exception occurs after deployment changes may have started, attempt rollback using the same recovery rules.
+- Attempt rollback after an unexpected exception if deployment may have started.
 - Handle command failures and unexpected exceptions explicitly.
-- Use consistent result objects or well-defined exceptions between modules.
-- Preserve the original failure when reporting secondary rollback or cleanup failures.
-- Run cleanup and final reporting from a protected finalization path, including after unexpected exceptions.
+- Use simple, consistent return values or exceptions between modules.
+- Preserve the original failure when rollback or cleanup also fails.
+- Always run cleanup and final reporting from a protected finalization path.
 
-## Module responsibilities
+## Assign module responsibilities
 
-- `scripts/logger.py`: Configure terminal/file logging and secret redaction.
-- `scripts/preflight.py`: Validate tools, configuration, environment, permissions, and disk space.
-- `scripts/backup.py`: Create, verify, and describe recovery backups.
-- `scripts/deployment.py`: Validate Compose and execute deployment commands.
-- `scripts/health.py`: Perform configurable readiness and functionality checks.
-- `scripts/rollback.py`: Restore the previous version and verify recovery.
-- `scripts/cleanup.py`: Remove only safe temporary resources.
-- `deploy.py`: Orchestrate stages, failures, rollback, cleanup, reporting, and exit codes.
+- Configure terminal/file logging and secret redaction in `scripts/logger.py`.
+- Validate tools, configuration, environment, permissions, and disk space in `scripts/preflight.py`.
+- Create, verify, and describe recovery backups in `scripts/backup.py`.
+- Validate Compose and execute deployment commands in `scripts/deployment.py`.
+- Perform configurable readiness and functionality checks in `scripts/health.py`.
+- Restore the previous version and verify recovery in `scripts/rollback.py`.
+- Remove only safe temporary resources in `scripts/cleanup.py`.
+- Orchestrate stages, failures, rollback, cleanup, reporting, and exit codes in `deploy.py`.
 
 ## Code quality
 
-- Use standard Python features and existing project dependencies where possible.
-- Avoid unnecessary dependencies, abstractions, classes, and configuration files.
+- Use standard Python features and existing project dependencies.
+- Avoid unnecessary dependencies, classes, wrappers, abstractions, configuration files, and duplicated logic.
 - Keep functions focused and names descriptive.
 - Follow existing project conventions.
 - Keep environment-specific configuration outside source code.
-- Add comments only to explain important reasoning or safety behavior.
+- Add comments only for non-obvious safety behavior.
 - Do not suppress errors, weaken tests, or remove assertions to obtain a passing result.
+- Prefer the smallest complete implementation over a flexible or general-purpose design.
 
 ## Expected deliverable
 
