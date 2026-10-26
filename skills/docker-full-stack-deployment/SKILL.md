@@ -55,6 +55,8 @@ Apply this skill when you add or review Docker deployment for a full-stack appli
 
 - Add health checks for the database and application services when reliable checks exist.
 - Use native database checks or application `/health` or `/ready` endpoints.
+- When a database is used, wait until its initialization has completely finished and its readiness check succeeds before creating a backup.
+- Stop deployment if database readiness is not reached.
 - Make checks compatible with the image; do not assume `curl` or `wget` exists.
 - Use Compose readiness conditions where needed:
 
@@ -98,4 +100,5 @@ Report every check that you could not run. Do not claim deployment verification 
 - [ ] Serve or route frontend pages through Nginx and proxy API requests.
 - [ ] Configure SPA fallback when required.
 - [ ] Configure health checks and readiness conditions where applicable.
+- [ ] Confirm that database initialization completes before database backups are created.
 - [ ] Test the complete stack and one representative workflow.

@@ -55,7 +55,7 @@ Run these stages in order:
 flowchart TD
     A[Initialize logger] --> B[Run preflight checks]
 
-    B -->|Pass| C[Create backups]
+    B -->|Pass| C[Wait for database readiness and create backups]
     B -->|Fail| K[Clean up safely]
 
     C -->|Pass| D[Validate Compose]
@@ -143,6 +143,8 @@ Apply terminal colors safely:
 ### 3. Create backups
 
 - Back up the database when the project supports it.
+- When a database is used, wait until its initialization has completely finished and its readiness check succeeds before creating the backup.
+- Stop deployment if database readiness is not reached.
 - Back up required configuration and recovery files.
 - Use unique timestamped locations and preserve existing backups.
 - Verify every required backup.
@@ -250,6 +252,7 @@ Provide a concise summary. Include:
 Use mocks or safe test doubles for commands that could affect production services. Verify the following:
 
 - [ ] Verify the execution order.
+- [ ] Confirm that database initialization completes before database backups are created.
 - [ ] Confirm that preflight and backup failures stop deployment and do not trigger rollback.
 - [ ] Confirm that Compose validation occurs before deployment.
 - [ ] Confirm that Compose validation failures do not trigger rollback.

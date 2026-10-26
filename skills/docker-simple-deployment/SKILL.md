@@ -44,6 +44,8 @@ Do not apply this skill to frontend/backend/Nginx stacks. Apply `docker-full-sta
 
 - Add a health check for the application when a reliable `/health` or `/ready` endpoint exists.
 - Use a native database check when a `db` service exists.
+- When a database is used, wait until its initialization has completely finished and its readiness check succeeds before creating a backup.
+- Stop deployment if database readiness is not reached.
 - Make checks compatible with the image; do not assume `curl` or `wget` exists.
 - Treat `depends_on` as startup ordering, not recovery.
 - Make the application handle temporary database failures.
@@ -71,4 +73,5 @@ Report every check that you could not run. Do not claim deployment verification 
 - [ ] Publish only the `app` port to the host.
 - [ ] Persist database data without providing direct host access when a database exists.
 - [ ] Configure health checks where applicable.
+- [ ] Confirm that database initialization completes before database backups are created.
 - [ ] Test the deployment and one representative workflow.
