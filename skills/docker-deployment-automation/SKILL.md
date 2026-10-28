@@ -30,6 +30,8 @@ python -m docker_deployment --config deploy_config.py
 
 See `toolkit/README.md` and `toolkit/examples/deploy_config.py` for the small
 configuration format. The toolkit does not guess project-specific commands.
+Its `DeploymentRunner` class keeps the deployment order fixed while allowing a
+project to override a simple stage method when configuration is not enough.
 
 Use Python and standard library features for cross-platform behavior. Use `pathlib` for paths and `subprocess` with argument lists and `shell=False` for commands. Do not use Bash-only syntax, shell scripts, Unix-only paths, or platform-specific command chaining.
 

@@ -31,6 +31,10 @@ docker-deploy --config deploy_config.py
 
 Commands are passed as argument lists. They are not run through a shell.
 
+The fixed deployment order is implemented by `DeploymentRunner.run()`. Most
+projects only need configuration. A project with a special stage can subclass
+`DeploymentRunner` and override one plain stage method.
+
 ## Configuration
 
 Required useful values are:

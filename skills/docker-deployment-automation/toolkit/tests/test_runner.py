@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from docker_deployment.commands import CommandResult
-from docker_deployment.runner import run
+from docker_deployment.runner import DeploymentRunner, run
 
 
 class FakeCommandRunner:
@@ -84,6 +84,65 @@ class RunnerTests(unittest.TestCase):
         (project_directory / "compose.yaml").write_text("services:\n  app:\n    image: example\n", encoding="utf-8")
         (project_directory / ".env").write_text("APP_MODE=test\n", encoding="utf-8")
         return temporary_directory, project_directory
+
+    def test_template_method_keeps_stage_order_for_a_subclass(self):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+
+        class RecordingRunner(DeploymentRunner):
+            def __init__(self, config):
+                super().__init__(config)
+                self.calls = []
+
+            def initialize(self):
+                super().initialize()
+                self.calls.append("initialize")
+
+            def preflight(self):
+                self.calls.append("preflight")
+                return {"ok": True, "errors": [], "compose_command": ["docker", "compose"]}
+
+            def backup(self):
+                self.calls.append("backup")
+                return {"ok": True, "errors": [], "backup_dir": "backups/example"}
+
+            def validate(self, compose_command):
+                self.calls.append("validate")
+                return {"ok": True, "error": ""}
+
+            def deploy(self, compose_command):
+                self.calls.append("deploy")
+                return {"ok": True, "error": ""}
+
+            def health_checks(self):
+                self.calls.append("health_checks")
+                return {"ok": True, "errors": []}
+
+            def cleanup(self):
+                self.calls.append("cleanup")
+                return {"ok": True, "errors": []}
+
+            def report(self):
+                self.calls.append("report")
+
+        runner = RecordingRunner(make_config(project_directory))
+
+        exit_code = runner.run()
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(
+            runner.calls,
+            [
+                "initialize",
+                "preflight",
+                "backup",
+                "validate",
+                "deploy",
+                "health_checks",
+                "cleanup",
+                "report",
+            ],
+        )
 
     @patch("docker_deployment.preflight.shutil.which", return_value="docker")
     def test_runs_stages_in_order(self, unused_which):

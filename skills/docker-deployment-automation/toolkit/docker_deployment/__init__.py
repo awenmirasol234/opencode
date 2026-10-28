@@ -1,5 +1,5 @@
 """Small, reusable Docker Compose deployment helpers."""
 
-from .runner import run
+from .runner import DeploymentRunner, run
 
-__all__ = ["run"]
+__all__ = ["DeploymentRunner", "run"]
