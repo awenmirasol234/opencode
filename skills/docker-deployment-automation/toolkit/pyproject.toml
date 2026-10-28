@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docker-deployment-toolkit"
+version = "0.1.0"
+description = "A small, safe Docker Compose deployment runner."
+requires-python = ">=3.8"
+
+[project.scripts]
+docker-deploy = "docker_deployment.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]

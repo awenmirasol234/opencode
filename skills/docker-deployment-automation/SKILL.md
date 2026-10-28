@@ -7,6 +7,11 @@ description: Build or improve a safe, modular Python deployment runner for Docke
 
 Build or improve a simple Python deployment runner for a Docker Compose application.
 
+This skill includes a reusable implementation at `toolkit/`. Use it when a
+project needs the same deployment flow across multiple repositories. Projects
+must provide explicit configuration for their Compose files, environment
+variables, database commands, health checks, and rollback command.
+
 Keep the implementation small and explicit. Add only code required for the project and this deployment flow. Do not add frameworks, dependencies, abstraction layers, or configuration systems without a clear need.
 
 ## Usage
@@ -16,6 +21,15 @@ Run the deployment from PowerShell or a Unix shell with:
 ```bash
 python deploy.py
 ```
+
+For the reusable toolkit, install it from `toolkit/` and run:
+
+```bash
+python -m docker_deployment --config deploy_config.py
+```
+
+See `toolkit/README.md` and `toolkit/examples/deploy_config.py` for the small
+configuration format. The toolkit does not guess project-specific commands.
 
 Use Python and standard library features for cross-platform behavior. Use `pathlib` for paths and `subprocess` with argument lists and `shell=False` for commands. Do not use Bash-only syntax, shell scripts, Unix-only paths, or platform-specific command chaining.
 
