@@ -1,9 +1,11 @@
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from docker_deployment.commands import CommandResult
+from docker_deployment.health import run_health_checks
+from docker_deployment.logger import Logger
 from docker_deployment.runner import DeploymentRunner, run
 
 
@@ -82,6 +84,11 @@ def make_config(project_directory):
 
 
 class RunnerTests(unittest.TestCase):
+    def setUp(self):
+        self.health_sleep_patcher = patch("docker_deployment.health.time.sleep")
+        self.health_sleep = self.health_sleep_patcher.start()
+        self.addCleanup(self.health_sleep_patcher.stop)
+
     def create_project(self):
         temporary_directory = tempfile.TemporaryDirectory()
         project_directory = Path(temporary_directory.name)
@@ -206,6 +213,21 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(any(command[0] == "rollback" for command in command_runner.commands))
         self.assertGreaterEqual(command_runner.health_failures, 1)
         self.assertEqual(state_path.read_text(encoding="utf-8").strip(), "b" * 40)
+
+    def test_health_checks_wait_30_seconds_and_run_once(self):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        logger = Logger(project_directory / "logs" / "health.log")
+        command_runner = FakeCommandRunner(fail_health_once=True)
+        config = make_config(project_directory)
+        config["health_checks"][0]["retries"] = 5
+
+        result = run_health_checks(config, command_runner, logger)
+
+        logger.close()
+        self.assertFalse(result["ok"])
+        self.assertEqual(command_runner.health_failures, 1)
+        self.assertEqual(self.health_sleep.call_args_list, [call(30)])
 
     @patch("docker_deployment.preflight.shutil.which", return_value="docker")
     def test_backup_failure_does_not_trigger_rollback(self, unused_which):

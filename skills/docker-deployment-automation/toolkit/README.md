@@ -116,6 +116,9 @@ when rollback must have an existing deployed version.
 - Backups, logs, volumes, and persistent data are not removed by cleanup.
 - Exit code `0` is returned only after deployment and health checks succeed.
 
+After deployment, the toolkit waits 30 seconds for containers to start and then
+runs each configured health check once. It does not poll health checks.
+
 ## Tests
 
 The tests use fake command runners and do not change Docker services:

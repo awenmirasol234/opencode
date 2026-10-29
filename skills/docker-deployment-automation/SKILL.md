@@ -80,11 +80,12 @@ flowchart TD
     D -->|Pass| E[Deploy application]
     D -->|Fail| K
 
-    E -->|Pass| F[Run health checks]
+    E -->|Pass| F[Wait 30 seconds]
+    F --> G[Run health checks once]
     E -->|Fail| H[Rollback]
 
-    F -->|Pass| K
-    F -->|Fail| H
+    G -->|Pass| K
+    G -->|Fail| H
 
     H --> I[Verify rollback outcome]
     I --> K
@@ -183,11 +184,13 @@ Apply terminal colors safely:
 - Avoid destructive Docker commands.
 - Treat deployment failures as rollback-triggering failures.
 
-### 6. Run health checks
+### 6. Wait and run health checks
 
+- After deployment succeeds, wait exactly 30 seconds without polling.
 - Check applicable container status, Nginx availability, backend API availability, and representative application behavior.
 - Skip checks for services the project does not use.
-- Read timeouts, retry limits, polling intervals, endpoints, and expected responses from the project’s existing configuration.
+- Run each configured health check once after the wait.
+- Read check timeouts, endpoints, and expected responses from the project’s existing configuration.
 - Trigger rollback when a required health check fails.
 
 ### 7. Roll back when required
