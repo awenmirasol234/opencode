@@ -6,6 +6,9 @@ It uses only the Python standard library at runtime. Each project provides a
 plain Python configuration dictionary. The toolkit does not guess database,
 health-check, migration, or rollback commands.
 
+The code uses beginner-friendly Python: simple functions, clear `if` statements,
+lists, and dictionaries. Each deployment step is kept in its own small file.
+
 ## Install
 
 From this directory, install it in the project environment:
@@ -29,11 +32,19 @@ python -m docker_deployment --config deploy_config.py
 docker-deploy --config deploy_config.py
 ```
 
-Commands are passed as argument lists. They are not run through a shell.
+Commands are written as lists. For example:
+
+```python
+["docker", "compose", "up", "-d"]
+```
+
+The commands are not run through a shell.
 
 The fixed deployment order is implemented by `DeploymentRunner.run()`. Most
-projects only need configuration. A project with a special stage can subclass
-`DeploymentRunner` and override one plain stage method.
+projects only need the configuration file. The runner calls these steps in
+order: preflight, backup, validation, deployment, health checks, cleanup, and
+reporting. A project with a special stage can override one of the small stage
+methods.
 
 ## Configuration
 
@@ -62,8 +73,7 @@ Rollback commands may use `{backup_dir}` and `{project_dir}`.
 Deployment and rollback commands may also use `{commit_sha}` and
 `{previous_commit_sha}`. The commit SHA must be a full 40-character Git SHA.
 
-The deployment configuration uses the commit SHA as the single release
-identity:
+The deployment configuration uses one commit SHA to identify the release:
 
 ```python
 "deployment": {

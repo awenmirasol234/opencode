@@ -112,45 +112,52 @@ class DeploymentRunner:
                 "error": "Rollback failed unexpectedly: {0}.".format(error),
             }
 
+    def _run_stages(self):
+        preflight_result = self.preflight()
+        if not preflight_result["ok"]:
+            self.errors.extend(preflight_result["errors"])
+            return
+
+        self.deployment_identity = preflight_result.get("deployment_identity")
+        compose_command = preflight_result["compose_command"]
+
+        self.backup_result = self.backup()
+        if not self.backup_result["ok"]:
+            self.errors.extend(self.backup_result["errors"])
+            return
+
+        compose_result = self.validate(compose_command)
+        if not compose_result["ok"]:
+            self.errors.append(compose_result["error"])
+            return
+
+        self.deployment_started = True
+        deploy_result = self.deploy(compose_command)
+        if not deploy_result["ok"]:
+            self.errors.append(deploy_result["error"])
+            self.rollback_result = self.attempt_rollback()
+            return
+
+        health_result = self.health_checks()
+        if not health_result["ok"]:
+            self.errors.extend(health_result["errors"])
+            self.rollback_result = self.attempt_rollback()
+            return
+
+        identity_result = self.record_deployment_identity()
+        if not identity_result["ok"]:
+            self.errors.append(identity_result["error"])
+            self.logger.fail(identity_result["error"])
+            self.rollback_result = self.attempt_rollback()
+            return
+
+        self.status = "successful"
+
     def run(self):
         self.initialize()
 
         try:
-            preflight_result = self.preflight()
-            if not preflight_result["ok"]:
-                self.errors.extend(preflight_result["errors"])
-            else:
-                self.deployment_identity = preflight_result.get("deployment_identity")
-                self.backup_result = self.backup()
-                if not self.backup_result["ok"]:
-                    self.errors.extend(self.backup_result["errors"])
-                else:
-                    compose_result = self.validate(
-                        preflight_result["compose_command"]
-                    )
-                    if not compose_result["ok"]:
-                        self.errors.append(compose_result["error"])
-                    else:
-                        self.deployment_started = True
-                        deploy_result = self.deploy(
-                            preflight_result["compose_command"]
-                        )
-                        if not deploy_result["ok"]:
-                            self.errors.append(deploy_result["error"])
-                            self.rollback_result = self.attempt_rollback()
-                        else:
-                            health_result = self.health_checks()
-                            if not health_result["ok"]:
-                                self.errors.extend(health_result["errors"])
-                                self.rollback_result = self.attempt_rollback()
-                            else:
-                                identity_result = self.record_deployment_identity()
-                                if not identity_result["ok"]:
-                                    self.errors.append(identity_result["error"])
-                                    self.logger.fail(identity_result["error"])
-                                    self.rollback_result = self.attempt_rollback()
-                                else:
-                                    self.status = "successful"
+            self._run_stages()
         except Exception as error:
             self.errors.append("An unexpected error occurred: {0}.".format(error))
             self.logger.fail("An unexpected error occurred during deployment.")
