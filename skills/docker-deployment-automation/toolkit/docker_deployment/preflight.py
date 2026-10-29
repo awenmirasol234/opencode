@@ -11,6 +11,7 @@ from .config import (
 
 
 def run_preflight(config, command_runner, logger):
+    # Do not change services until every required check passes.
     logger.info("Running preflight checks.")
     errors = []
     project_dir = project_directory(config)

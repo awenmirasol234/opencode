@@ -13,6 +13,7 @@ class CommandResult:
 
 
 def run_command(command, cwd=None, timeout=None):
+    # Run commands directly so config values are not passed through a shell.
     try:
         completed = subprocess.run(
             command,
@@ -37,6 +38,7 @@ def run_command(command, cwd=None, timeout=None):
 
 
 def find_compose_command(command_runner, project_dir):
+    # Support both current and older Docker Compose installs.
     docker_path = shutil.which("docker")
     if docker_path:
         result = command_runner(["docker", "compose", "version"], project_dir, 30)

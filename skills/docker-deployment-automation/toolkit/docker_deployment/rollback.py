@@ -32,6 +32,7 @@ def rollback(
         logger.fail("The application rollback failed.")
         return {"ok": False, "error": "The application rollback failed."}
 
+    # A rollback is complete only after the restored app passes its checks.
     health_result = run_health_checks(config, command_runner, logger)
     if not health_result["ok"]:
         logger.fail("Rollback verification failed.")

@@ -14,6 +14,7 @@ def redact_text(text, secret_values=None):
     if text is None:
         return ""
 
+    # Redact known values and common secret formats before logging.
     redacted = str(text)
     if secret_values:
         for value in secret_values:
@@ -31,6 +32,7 @@ class Logger:
         self.file = self.log_path.open("a", encoding="utf-8")
         self.stream = stream or sys.stdout
         self.secret_values = secret_values or []
+        # Only interactive terminals should receive color codes.
         self.use_color = self.stream.isatty() and not os.environ.get("NO_COLOR")
 
     def close(self):
@@ -38,6 +40,7 @@ class Logger:
             self.file.close()
 
     def _write(self, level, message):
+        # Use the same redacted message for the file and terminal.
         clean_message = redact_text(message, self.secret_values)
         line = "[{0}] {1}".format(level, clean_message)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

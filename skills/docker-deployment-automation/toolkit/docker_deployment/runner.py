@@ -13,6 +13,7 @@ from .rollback import rollback as restore_rollback
 
 
 def _log_path(config):
+    # Choose a new name so previous logs are preserved.
     log_dir = project_path(config, config.get("log_dir", "logs"))
     log_dir.mkdir(parents=True, exist_ok=True)
     name = datetime.now().strftime("deployment_%Y%m%d_%H%M%S.log")
@@ -131,6 +132,7 @@ class DeploymentRunner:
             self.errors.append(compose_result["error"])
             return
 
+        # A failed deploy may have changed services after this point.
         self.deployment_started = True
         deploy_result = self.deploy(compose_command)
         if not deploy_result["ok"]:
@@ -164,6 +166,7 @@ class DeploymentRunner:
             if self.deployment_started:
                 self.rollback_result = self.attempt_rollback()
 
+        # Always clean up and report, even when a stage raises an error.
         try:
             self.cleanup_result = self.cleanup()
             if not self.cleanup_result["ok"]:

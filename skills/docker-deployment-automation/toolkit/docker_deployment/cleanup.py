@@ -12,6 +12,7 @@ def _inside(path, parent):
 
 
 def clean(config, logger):
+    # Never remove backups or logs needed after a failure.
     project_dir = project_directory(config)
     backup_dir = project_path(config, config.get("backup_dir", "backups"))
     log_dir = project_path(config, config.get("log_dir", "logs"))

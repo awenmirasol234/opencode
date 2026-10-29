@@ -7,6 +7,7 @@ from .config import project_directory, project_path
 
 
 def _safe_project_path(config, value):
+    # Backups must stay inside the project.
     path = project_path(config, value)
     project_dir = project_directory(config)
     try:
@@ -17,6 +18,7 @@ def _safe_project_path(config, value):
 
 
 def _new_backup_directory(config):
+    # Keep each run's backup separate from earlier backups.
     backup_root = project_path(config, config.get("backup_dir", "backups"))
     backup_root.mkdir(parents=True, exist_ok=True)
     name = datetime.now().strftime("backup_%Y%m%d_%H%M%S")
@@ -41,6 +43,7 @@ def _copy_path(source, project_dir, backup_dir):
 
 
 def _wait_for_database(config, command_runner, logger):
+    # The database must be ready before its backup is made.
     database = config.get("database", {})
     readiness_command = database.get("readiness_command")
     if not readiness_command:

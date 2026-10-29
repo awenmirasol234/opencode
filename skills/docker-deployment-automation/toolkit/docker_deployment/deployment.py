@@ -15,6 +15,7 @@ def _compose_command(config, compose_command, arguments):
 
 
 def validate_compose(config, compose_command, command_runner, logger):
+    # Validate before running a command that can change services.
     logger.info("Validating the Docker Compose configuration.")
     command = _compose_command(config, compose_command, ["config"])
     result = command_runner(command, str(project_directory(config)), 120)
@@ -43,6 +44,7 @@ def deploy(config, compose_command, command_runner, logger, deployment_identity=
     logger.info("Deploying the application.")
     arguments = config.get("compose", {}).get("deploy_args", ["up", "-d"])
     if deployment_identity:
+        # Include the release identity so rollback knows which version was deployed.
         arguments = format_command(
             arguments,
             {

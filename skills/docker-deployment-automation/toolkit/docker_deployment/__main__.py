@@ -13,6 +13,7 @@ def load_config(path):
 
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    # Allow projects to use a fixed dictionary or build it with a function.
     config = getattr(module, "CONFIG", None)
     if config is None and hasattr(module, "get_config"):
         config = module.get_config()

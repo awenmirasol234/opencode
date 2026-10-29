@@ -51,6 +51,7 @@ def run_health_checks(config, command_runner, logger):
         logger.warning("No health checks were configured.")
         return {"ok": False, "errors": ["No health checks were configured."]}
 
+    # Wait once for startup; do not poll the health checks.
     logger.info(
         "Waiting {0} seconds for the containers to become ready.".format(
             CONTAINER_READY_DELAY_SECONDS
