@@ -43,6 +43,7 @@ Required useful values are:
 - `compose_files`: Compose files to use.
 - `env_file`: optional environment file.
 - `required_env`: required variable names.
+- `deployment`: commit SHA and rollback state configuration.
 - `backup_paths`: project files or directories to preserve.
 - `health_checks`: explicit command or URL checks.
 - `rollback.command`: explicit project recovery command.
@@ -58,6 +59,24 @@ explicit backup command. The backup command may use these placeholders:
 - `{project_dir}`
 
 Rollback commands may use `{backup_dir}` and `{project_dir}`.
+Deployment and rollback commands may also use `{commit_sha}` and
+`{previous_commit_sha}`. The commit SHA must be a full 40-character Git SHA.
+
+The deployment configuration uses the commit SHA as the single release
+identity:
+
+```python
+"deployment": {
+    "commit_sha_env": "GIT_COMMIT_SHA",
+    "state_file": ".deployment/current-sha",
+    "require_previous_sha": False,
+},
+```
+
+The runner reads the new SHA from the configured environment variable or
+environment file, validates it before backups, and records it only after
+deployment and health checks succeed. Set `require_previous_sha` to `True`
+when rollback must have an existing deployed version.
 
 ## Failure behavior
 

@@ -3,6 +3,11 @@ CONFIG = {
     "compose_files": ["compose.yaml"],
     "env_file": ".env",
     "required_env": ["APP_ENV"],
+    "deployment": {
+        "commit_sha_env": "GIT_COMMIT_SHA",
+        "state_file": ".deployment/current-sha",
+        "require_previous_sha": False,
+    },
     "backup_paths": ["compose.yaml", ".env.example"],
     "backup_dir": "backups",
     "log_dir": "logs",

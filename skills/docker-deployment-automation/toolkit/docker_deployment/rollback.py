@@ -3,7 +3,13 @@ from .config import project_directory
 from .health import run_health_checks
 
 
-def rollback(config, backup_result, command_runner, logger):
+def rollback(
+    config,
+    backup_result,
+    command_runner,
+    logger,
+    deployment_identity=None,
+):
     logger.info("Rolling back the application.")
     rollback_config = config.get("rollback", {})
     command = rollback_config.get("command")
@@ -17,6 +23,9 @@ def rollback(config, backup_result, command_runner, logger):
         "backup_dir": backup_result.get("backup_dir", ""),
         "project_dir": str(project_directory(config)),
     }
+    if deployment_identity:
+        values["commit_sha"] = deployment_identity.get("commit_sha", "")
+        values["previous_commit_sha"] = deployment_identity.get("previous_commit_sha", "")
     command = format_command(command, values)
     result = command_runner(command, str(project_directory(config)), 600)
     if not result.ok():

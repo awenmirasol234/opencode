@@ -1,3 +1,4 @@
+from .commands import format_command
 from .config import project_directory, project_path
 
 
@@ -38,9 +39,17 @@ def validate_compose(config, compose_command, command_runner, logger):
     return {"ok": True, "error": ""}
 
 
-def deploy(config, compose_command, command_runner, logger):
+def deploy(config, compose_command, command_runner, logger, deployment_identity=None):
     logger.info("Deploying the application.")
     arguments = config.get("compose", {}).get("deploy_args", ["up", "-d"])
+    if deployment_identity:
+        arguments = format_command(
+            arguments,
+            {
+                "commit_sha": deployment_identity.get("commit_sha", ""),
+                "previous_commit_sha": deployment_identity.get("previous_commit_sha", ""),
+            },
+        )
     command = _compose_command(config, compose_command, arguments)
     result = command_runner(command, str(project_directory(config)), 600)
     if not result.ok():

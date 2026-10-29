@@ -57,6 +57,10 @@ def make_config(project_directory):
         "compose_files": ["compose.yaml"],
         "env_file": ".env",
         "required_env": ["APP_MODE"],
+        "deployment": {
+            "commit_sha_env": "GIT_COMMIT_SHA",
+            "state_file": ".deployment/current-sha",
+        },
         "backup_paths": ["compose.yaml"],
         "compose": {
             "deploy_args": ["up", "-d"],
@@ -82,7 +86,10 @@ class RunnerTests(unittest.TestCase):
         temporary_directory = tempfile.TemporaryDirectory()
         project_directory = Path(temporary_directory.name)
         (project_directory / "compose.yaml").write_text("services:\n  app:\n    image: example\n", encoding="utf-8")
-        (project_directory / ".env").write_text("APP_MODE=test\n", encoding="utf-8")
+        (project_directory / ".env").write_text(
+            "APP_MODE=test\nGIT_COMMIT_SHA={0}\n".format("a" * 40),
+            encoding="utf-8",
+        )
         return temporary_directory, project_directory
 
     def test_template_method_keeps_stage_order_for_a_subclass(self):
@@ -188,6 +195,9 @@ class RunnerTests(unittest.TestCase):
     def test_health_failure_triggers_rollback(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
+        state_path = project_directory / ".deployment" / "current-sha"
+        state_path.parent.mkdir()
+        state_path.write_text("b" * 40, encoding="utf-8")
         command_runner = FakeCommandRunner(fail_health_once=True)
 
         exit_code = run(make_config(project_directory), command_runner)
@@ -195,6 +205,7 @@ class RunnerTests(unittest.TestCase):
         self.assertNotEqual(exit_code, 0)
         self.assertTrue(any(command[0] == "rollback" for command in command_runner.commands))
         self.assertGreaterEqual(command_runner.health_failures, 1)
+        self.assertEqual(state_path.read_text(encoding="utf-8").strip(), "b" * 40)
 
     @patch("docker_deployment.preflight.shutil.which", return_value="docker")
     def test_backup_failure_does_not_trigger_rollback(self, unused_which):
@@ -252,6 +263,77 @@ class RunnerTests(unittest.TestCase):
 
         self.assertNotEqual(exit_code, 0)
         self.assertTrue(any(command[0] == "rollback" for command in command_runner.commands))
+
+    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    def test_missing_commit_sha_stops_before_backup(self, unused_which):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        command_runner = FakeCommandRunner()
+        config = make_config(project_directory)
+        config["deployment"]["commit_sha_env"] = "MISSING_COMMIT_SHA"
+
+        exit_code = run(config, command_runner)
+
+        self.assertNotEqual(exit_code, 0)
+        self.assertFalse(any(command[0] == "db-backup" for command in command_runner.commands))
+        self.assertFalse(any("up" in command for command in command_runner.commands))
+
+    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    def test_commit_sha_is_used_in_deployment_and_saved(self, unused_which):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        command_runner = FakeCommandRunner()
+        config = make_config(project_directory)
+        config["compose"]["deploy_args"] = [
+            "--project-name",
+            "example-{commit_sha}",
+            "up",
+            "-d",
+        ]
+
+        exit_code = run(config, command_runner)
+
+        self.assertEqual(exit_code, 0)
+        deploy_command = next(command for command in command_runner.commands if "up" in command)
+        self.assertIn("example-{0}".format("a" * 40), deploy_command)
+        state_path = project_directory / ".deployment" / "current-sha"
+        self.assertEqual(state_path.read_text(encoding="utf-8").strip(), "a" * 40)
+
+    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    def test_rollback_receives_the_previous_commit_sha(self, unused_which):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        state_path = project_directory / ".deployment" / "current-sha"
+        state_path.parent.mkdir()
+        state_path.write_text("b" * 40, encoding="utf-8")
+        command_runner = FakeCommandRunner(fail_deployment=True)
+        config = make_config(project_directory)
+        config["rollback"]["command"] = [
+            "rollback",
+            "{previous_commit_sha}",
+            "{backup_dir}",
+        ]
+
+        exit_code = run(config, command_runner)
+
+        self.assertNotEqual(exit_code, 0)
+        rollback_command = next(
+            command for command in command_runner.commands if command[0] == "rollback"
+        )
+        self.assertEqual(rollback_command[1], "b" * 40)
+
+    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    def test_required_previous_commit_sha_is_validated(self, unused_which):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        command_runner = FakeCommandRunner()
+        config = make_config(project_directory)
+        config["deployment"]["require_previous_sha"] = True
+
+        exit_code = run(config, command_runner)
+
+        self.assertNotEqual(exit_code, 0)
+        self.assertFalse(any("up" in command for command in command_runner.commands))
 
 
 if __name__ == "__main__":

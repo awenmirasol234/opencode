@@ -2,7 +2,12 @@ import os
 import shutil
 
 from .commands import find_compose_command
-from .config import environment_values, project_directory, project_path
+from .config import (
+    environment_values,
+    project_directory,
+    project_path,
+    read_deployment_identity,
+)
 
 
 def run_preflight(config, command_runner, logger):
@@ -57,6 +62,20 @@ def run_preflight(config, command_runner, logger):
             errors.append("The available disk space is too low.")
             logger.fail("The available disk space is too low.")
 
+    identity_result = read_deployment_identity(config)
+    deployment_identity = None
+    if identity_result["ok"]:
+        deployment_identity = identity_result
+        logger.ok("The deployment commit SHA is valid.")
+        if identity_result.get("previous_commit_sha"):
+            logger.ok("The previous deployment commit SHA was found.")
+        else:
+            logger.warning("No previous deployment commit SHA was found.")
+    else:
+        for error in identity_result["errors"]:
+            errors.append(error)
+            logger.fail(error)
+
     compose_command = find_compose_command(command_runner, str(project_dir))
     if compose_command:
         logger.ok("Docker Compose is available.")
@@ -66,7 +85,17 @@ def run_preflight(config, command_runner, logger):
 
     if errors:
         logger.fail("Preflight checks failed.")
-        return {"ok": False, "errors": errors, "compose_command": compose_command}
+        return {
+            "ok": False,
+            "errors": errors,
+            "compose_command": compose_command,
+            "deployment_identity": deployment_identity,
+        }
 
     logger.success("Preflight checks completed successfully.")
-    return {"ok": True, "errors": [], "compose_command": compose_command}
+    return {
+        "ok": True,
+        "errors": [],
+        "compose_command": compose_command,
+        "deployment_identity": deployment_identity,
+    }

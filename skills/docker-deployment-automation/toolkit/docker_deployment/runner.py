@@ -3,7 +3,7 @@ from datetime import datetime
 from .backup import create_backups
 from .cleanup import clean
 from .commands import run_command
-from .config import environment_values, project_path
+from .config import environment_values, project_path, save_deployment_identity
 from .deployment import deploy as deploy_application
 from .deployment import validate_compose
 from .health import run_health_checks
@@ -34,6 +34,7 @@ class DeploymentRunner:
         self.backup_result = None
         self.rollback_result = None
         self.cleanup_result = None
+        self.deployment_identity = None
         self.errors = []
         self.deployment_started = False
         self.status = "failed"
@@ -63,6 +64,7 @@ class DeploymentRunner:
             compose_command,
             self.command_runner,
             self.logger,
+            self.deployment_identity,
         )
 
     def health_checks(self):
@@ -74,7 +76,11 @@ class DeploymentRunner:
             self.backup_result or {},
             self.command_runner,
             self.logger,
+            self.deployment_identity,
         )
+
+    def record_deployment_identity(self):
+        return save_deployment_identity(self.deployment_identity)
 
     def cleanup(self):
         return clean(self.config, self.logger)
@@ -114,6 +120,7 @@ class DeploymentRunner:
             if not preflight_result["ok"]:
                 self.errors.extend(preflight_result["errors"])
             else:
+                self.deployment_identity = preflight_result.get("deployment_identity")
                 self.backup_result = self.backup()
                 if not self.backup_result["ok"]:
                     self.errors.extend(self.backup_result["errors"])
@@ -137,7 +144,13 @@ class DeploymentRunner:
                                 self.errors.extend(health_result["errors"])
                                 self.rollback_result = self.attempt_rollback()
                             else:
-                                self.status = "successful"
+                                identity_result = self.record_deployment_identity()
+                                if not identity_result["ok"]:
+                                    self.errors.append(identity_result["error"])
+                                    self.logger.fail(identity_result["error"])
+                                    self.rollback_result = self.attempt_rollback()
+                                else:
+                                    self.status = "successful"
         except Exception as error:
             self.errors.append("An unexpected error occurred: {0}.".format(error))
             self.logger.fail("An unexpected error occurred during deployment.")
