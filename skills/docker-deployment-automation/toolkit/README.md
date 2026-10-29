@@ -9,27 +9,46 @@ health-check, migration, or rollback commands.
 The code uses beginner-friendly Python: simple functions, clear `if` statements,
 lists, and dictionaries. Each deployment step is kept in its own small file.
 
-## Install
+## Install in another project
 
-From this directory, install it in the project environment:
+Keep a local copy of this `toolkit` folder. From the target project's folder,
+install the toolkit with the path to that folder:
 
 ```text
-python -m pip install -e .
+python -m pip install ./path/to/toolkit
 ```
 
-The package can also be used directly without installation by running from
-this directory.
+On Windows, a local path can also look like this:
+
+```text
+python -m pip install .\tools\docker-deployment-toolkit
+```
+
+Use editable installation when developing the toolkit. Changes to the local
+toolkit files will then be used immediately:
+
+```text
+python -m pip install -e ./path/to/toolkit
+```
+
+The toolkit has no runtime dependencies outside the Python standard library.
 
 ## Use
 
-Copy `examples/deploy_config.py` to the project as `deploy_config.py`, then
-replace the example health and rollback commands with project commands.
+Copy `examples/deploy_config.py` from the local toolkit folder to the target
+project as `deploy_config.py`. Replace the example health and rollback commands
+with commands for that project.
 
-Run either command:
+Run the command from the target project folder:
+
+```text
+docker-deploy --config deploy_config.py
+```
+
+You can also run the module directly:
 
 ```text
 python -m docker_deployment --config deploy_config.py
-docker-deploy --config deploy_config.py
 ```
 
 Commands are written as lists. For example:
