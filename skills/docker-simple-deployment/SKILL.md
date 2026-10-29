@@ -9,6 +9,17 @@ Apply this skill when you add or review Docker deployment for a simple applicati
 
 Do not apply this skill to frontend/backend/Nginx stacks. Apply `docker-full-stack-deployment` to those stacks. Do not create a Python deployment runner. Apply `docker-deployment-automation` to that work.
 
+## Copyable template
+
+The `template/` folder contains a starting point for simple applications.
+Copy it into a project, then replace its runtime, build, start, port, and
+health-check placeholders with values from that project.
+
+The default `compose.yaml` contains only the `app` service. Use
+`compose.with-db.yaml` together with it only when the project needs a database.
+The database image, environment values, data path, and readiness command must
+be configured for the selected database. The template does not guess them.
+
 ## Workflow
 
 ### 1. Inspect the application
@@ -52,7 +63,7 @@ Do not apply this skill to frontend/backend/Nginx stacks. Apply `docker-full-sta
 
 ### 7. Keep deployment configuration focused
 
-- Provide only a Dockerfile, `compose.yaml`, `.dockerignore`, `.env.example`, and brief run documentation unless the project needs more.
+- Provide only a Dockerfile, `compose.yaml`, optional `compose.with-db.yaml`, `.dockerignore`, `.gitignore`, `.env.example`, and brief run documentation unless the project needs more.
 - Keep Docker setup files comment-free.
 - Use clear names and structure.
 
