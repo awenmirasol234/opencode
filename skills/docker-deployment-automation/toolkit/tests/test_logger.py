@@ -3,10 +3,48 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from docker_deployment.logger import Logger, redact_text
+from docker_deployment.logger import (
+    ASCII_SPINNER_FRAMES,
+    SPINNER_FRAMES,
+    Logger,
+    redact_text,
+    spinner_frames,
+)
 
 
 class LoggerTests(unittest.TestCase):
+    def test_spinner_frames_use_unicode_when_the_stream_supports_it(self):
+        class UnicodeStream:
+            encoding = "utf-8"
+
+        self.assertEqual(spinner_frames(UnicodeStream()), SPINNER_FRAMES)
+
+    def test_spinner_frames_use_ascii_when_the_stream_does_not_support_unicode(self):
+        class AsciiStream:
+            encoding = "ascii"
+
+        self.assertEqual(spinner_frames(AsciiStream()), ASCII_SPINNER_FRAMES)
+
+    def test_stage_spinner_stops_before_the_next_log_message(self):
+        class TerminalStream(io.StringIO):
+            def isatty(self):
+                return True
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            log_path = Path(temporary_directory) / "deployment.log"
+            output = TerminalStream()
+            logger = Logger(log_path, output)
+
+            logger.info("Working on the deployment.")
+            logger.success("The deployment completed.")
+            logger.close()
+
+            terminal_text = output.getvalue()
+
+        self.assertIn("\r" + SPINNER_FRAMES[0], terminal_text)
+        self.assertIn("\r\033[2K", terminal_text)
+        self.assertIn("\033[32m[PASS]\033[0m The deployment completed.\n", terminal_text)
+
     def test_colors_only_the_log_level_on_interactive_output(self):
         class TerminalStream(io.StringIO):
             def isatty(self):
