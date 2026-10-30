@@ -7,6 +7,23 @@ from docker_deployment.logger import Logger, redact_text
 
 
 class LoggerTests(unittest.TestCase):
+    def test_colors_only_the_log_level_on_interactive_output(self):
+        class TerminalStream(io.StringIO):
+            def isatty(self):
+                return True
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            log_path = Path(temporary_directory) / "deployment.log"
+            output = TerminalStream()
+            logger = Logger(log_path, output)
+
+            logger.info("The deployment started.")
+            logger.close()
+
+            terminal_text = output.getvalue()
+
+        self.assertIn("\033[36m[INFO]\033[0m The deployment started.\n", terminal_text)
+
     def test_redacts_secret_values_and_key_value_secrets(self):
         message = "TOKEN=token-value password: secret-value"
 
