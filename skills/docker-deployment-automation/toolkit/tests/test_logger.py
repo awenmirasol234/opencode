@@ -41,7 +41,12 @@ class LoggerTests(unittest.TestCase):
 
             terminal_text = output.getvalue()
 
-        self.assertIn("\r" + SPINNER_FRAMES[0], terminal_text)
+        self.assertIn(
+            "\r\033[36m[INFO]\033[0m "
+            + SPINNER_FRAMES[0]
+            + " Working on the deployment.",
+            terminal_text,
+        )
         self.assertIn("\r\033[2K", terminal_text)
         self.assertIn("\033[32m[PASS]\033[0m The deployment completed.\n", terminal_text)
 
@@ -60,7 +65,12 @@ class LoggerTests(unittest.TestCase):
 
             terminal_text = output.getvalue()
 
-        self.assertIn("\033[36m[INFO]\033[0m The deployment started.\n", terminal_text)
+        self.assertIn(
+            "\033[36m[INFO]\033[0m "
+            + SPINNER_FRAMES[0]
+            + " The deployment started.",
+            terminal_text,
+        )
 
     def test_redacts_secret_values_and_key_value_secrets(self):
         message = "TOKEN=token-value password: secret-value"

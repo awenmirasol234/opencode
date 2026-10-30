@@ -57,31 +57,37 @@ class Logger:
         if not self.file.closed:
             self.file.close()
 
-    def _write_spinner_frame(self, frame):
+    def _write_spinner_frame(self, frame, level_text, message):
         with self.spinner_lock:
-            self.stream.write("\r" + frame)
+            self.stream.write("\r{0} {1} {2}".format(level_text, frame, message))
             self.stream.flush()
 
-    def _run_spinner(self, frames, stop_event):
+    def _run_spinner(self, frames, stop_event, level_text, message):
         frame_index = 1
         try:
             while not stop_event.wait(SPINNER_INTERVAL_SECONDS):
-                self._write_spinner_frame(frames[frame_index % len(frames)])
+                self._write_spinner_frame(
+                    frames[frame_index % len(frames)],
+                    level_text,
+                    message,
+                )
                 frame_index += 1
         except (OSError, ValueError):
             return
 
-    def start_spinner(self):
+    def start_spinner(self, message="", level_text=None):
         if not self.use_color:
             return
 
+        if level_text is None:
+            level_text = "[INFO]"
         self.stop_spinner()
         frames = spinner_frames(self.stream)
         stop_event = threading.Event()
-        self._write_spinner_frame(frames[0])
+        self._write_spinner_frame(frames[0], level_text, message)
         thread = threading.Thread(
             target=self._run_spinner,
-            args=(frames, stop_event),
+            args=(frames, stop_event, level_text, message),
             daemon=True,
         )
         self.spinner_stop = stop_event
@@ -107,7 +113,7 @@ class Logger:
         self.spinner_stop = None
         self.spinner_thread = None
 
-    def _write(self, level, message):
+    def _write(self, level, message, start_spinner=False):
         self.stop_spinner()
         # Use the same redacted message for the file and terminal.
         clean_message = redact_text(message, self.secret_values)
@@ -117,7 +123,7 @@ class Logger:
         self.file.write("[{0}] {1}\n".format(timestamp, line))
         self.file.flush()
 
-        terminal_line = line
+        terminal_level = level_label
         if self.use_color:
             color = ""
             if level == "INFO":
@@ -128,13 +134,18 @@ class Logger:
                 color = "\033[33m"
             elif level == "FAIL":
                 color = "\033[31m"
-            terminal_line = color + level_label + "\033[0m " + clean_message
+            terminal_level = color + level_label + "\033[0m"
+
+        if start_spinner and self.use_color:
+            self.start_spinner(clean_message, terminal_level)
+            return
+
+        terminal_line = terminal_level + " " + clean_message
         self.stream.write(terminal_line + "\n")
         self.stream.flush()
 
     def info(self, message):
-        self._write("INFO", message)
-        self.start_spinner()
+        self._write("INFO", message, start_spinner=True)
 
     def ok(self, message):
         self._write(" OK ", message)
