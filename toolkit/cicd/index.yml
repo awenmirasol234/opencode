@@ -20,9 +20,17 @@ workflows:
     description: Deploy published Docker images to a remote server through SSH.
 
 templates:
+  compose-dev:
+    file: templates/compose-dev.yml
+    description: Development environment with source code mounts and exposed development ports.
+
+  compose-prod:
+    file: templates/compose-prod.yml
+    description: Production environment using prebuilt Docker images and persistent volumes.
+
   docker-compose:
     file: templates/docker-compose.yml
-    description: Reusable Docker Compose configuration.
+    description: General-purpose Docker Compose template.
 
 pipeline:
   - ci
