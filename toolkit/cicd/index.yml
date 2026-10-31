@@ -22,15 +22,16 @@ workflows:
 templates:
   compose-dev:
     file: templates/compose-dev.yml
-    description: Development environment with source code mounts and exposed development ports.
+    description: Development environment with source code mounts and development ports.
 
   compose-prod:
     file: templates/compose-prod.yml
-    description: Production environment using prebuilt Docker images and persistent volumes.
+    description: Production environment with Nginx reverse proxy, private backend and database services, and persistent volumes.
 
-  docker-compose:
-    file: templates/docker-compose.yml
-    description: General-purpose Docker Compose template.
+  nginx:
+    dockerfile: templates/nginx/Dockerfile
+    config: templates/nginx/default.conf
+    description: Nginx reverse proxy for frontend and backend API routing.
 
 pipeline:
   - ci
