@@ -164,6 +164,11 @@ Place the following in the Presentation Layer:
 - For documentation or configuration changes, run targeted validation such as `git diff --check`.
 - Report unavailable checks instead of inventing commands.
 
+## CI/CD Toolkit
+
+- Use `toolkit/cicd/index.yml` as the source of truth for available CI/CD workflows, Docker templates, health checks, pipeline stages, requirements, secrets, and variables.
+- Before changing CI/CD or Docker deployment configuration, inspect the index and use its referenced toolkit files where applicable.
+
 ## Dependency Management
 
 - Add dependencies only when they provide clear value.
