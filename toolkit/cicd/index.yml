@@ -1,0 +1,49 @@
+name: CI/CD Toolkit
+version: 1.0.0
+description: Reusable GitHub Actions workflows and Docker deployment templates.
+
+workflows:
+  ci:
+    file: workflows/ci.yml
+    description: Run automated tests on push and pull requests.
+
+  docker-build:
+    file: workflows/docker-build.yml
+    description: Build Docker images and verify Dockerfiles.
+
+  docker-publish:
+    file: workflows/docker-publish.yml
+    description: Build and publish Docker images to GHCR.
+
+  deploy:
+    file: workflows/deploy.yml
+    description: Deploy published Docker images to a remote server through SSH.
+
+templates:
+  docker-compose:
+    file: templates/docker-compose.yml
+    description: Reusable Docker Compose configuration.
+
+pipeline:
+  - ci
+  - docker-build
+  - docker-publish
+  - deploy
+
+requirements:
+  - GitHub Actions
+  - Docker
+  - Docker Compose
+  - GitHub Container Registry
+  - Ubuntu deployment server
+  - SSH access
+
+configuration:
+  secrets:
+    - SERVER_HOST
+    - SERVER_USER
+    - SERVER_SSH_KEY
+    - MYSQL_ROOT_PASSWORD
+
+  variables:
+    - IMAGE_TAG
