@@ -33,6 +33,39 @@ templates:
     config: templates/nginx/default.conf
     description: Nginx reverse proxy for frontend and backend API routing.
 
+healthchecks:
+  mysql:
+    file: healthchecks/mysql.yml
+    description: MySQL database health check.
+
+  postgres:
+    file: healthchecks/postgres.yml
+    description: PostgreSQL database health check.
+
+  mariadb:
+    file: healthchecks/mariadb.yml
+    description: MariaDB database health check.
+
+  redis:
+    file: healthchecks/redis.yml
+    description: Redis connectivity health check.
+
+  mongodb:
+    file: healthchecks/mongodb.yml
+    description: MongoDB database health check.
+
+  nginx:
+    file: healthchecks/nginx.yml
+    description: Nginx configuration health check.
+
+  rabbitmq:
+    file: healthchecks/rabbitmq.yml
+    description: RabbitMQ node health check.
+
+  memcached:
+    file: healthchecks/memcached.yml
+    description: Memcached connectivity health check.
+
 pipeline:
   - ci
   - docker-build
