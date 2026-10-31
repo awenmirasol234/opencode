@@ -1,0 +1,30 @@
+
+name: Deploy via Self-Hosted Runner
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Ubuntu Server
+    runs-on:
+      - self-hosted
+      - linux
+      - x64
+      - production
+
+    steps:
+      - name: Deploy application
+        run: |
+          cd /opt/myapp
+          ./deploy.py
