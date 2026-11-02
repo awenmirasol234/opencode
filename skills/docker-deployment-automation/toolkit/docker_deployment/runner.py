@@ -2,8 +2,8 @@ from datetime import datetime
 
 from .backup import create_backups
 from .cleanup import clean
-from .commands import run_command
-from .config import environment_values, project_path, save_deployment_identity
+from .commands import format_command, run_command
+from .config import environment_values, project_directory, project_path, save_deployment_identity
 from .deployment import deploy as deploy_application
 from .deployment import validate_compose
 from .health import run_health_checks
@@ -103,6 +103,46 @@ class DeploymentRunner:
         for error in self.errors:
             self.logger.fail(error)
 
+    def run_hook(self, name):
+        hooks = self.config.get("hooks", {})
+        command = hooks.get(name)
+        if not command:
+            return {"ok": True, "skipped": True, "error": ""}
+
+        values = {
+            "project_dir": str(project_directory(self.config)),
+            "backup_dir": (self.backup_result or {}).get("backup_dir", ""),
+            "commit_sha": "",
+            "previous_commit_sha": "",
+        }
+        if self.deployment_identity:
+            values["commit_sha"] = self.deployment_identity.get("commit_sha", "")
+            values["previous_commit_sha"] = self.deployment_identity.get(
+                "previous_commit_sha", ""
+            )
+
+        try:
+            formatted = format_command(command, values)
+            result = self.command_runner(formatted, str(project_directory(self.config)), 300)
+            if not result.ok():
+                error = "The {0} hook failed.".format(name)
+                self.logger.fail(error)
+                return {"ok": False, "error": error, "skipped": False}
+            self.logger.ok("The {0} hook completed.".format(name))
+            return {"ok": True, "error": "", "skipped": False}
+        except Exception as error:
+            message = "The {0} hook failed unexpectedly: {1}.".format(name, error)
+            self.logger.fail(message)
+            return {"ok": False, "error": message, "skipped": False}
+
+    def attempt_recovery(self):
+        result = self.attempt_rollback()
+        for hook_name in ("restore_on_failure", "release_rollback_on_failure"):
+            hook_result = self.run_hook(hook_name)
+            if not hook_result["ok"]:
+                self.errors.append(hook_result["error"])
+        return result
+
     def attempt_rollback(self):
         try:
             return self.rollback()
@@ -122,6 +162,11 @@ class DeploymentRunner:
         self.deployment_identity = preflight_result.get("deployment_identity")
         compose_command = preflight_result["compose_command"]
 
+        hook_result = self.run_hook("backup_before_deploy")
+        if not hook_result["ok"]:
+            self.errors.append(hook_result["error"])
+            return
+
         self.backup_result = self.backup()
         if not self.backup_result["ok"]:
             self.errors.extend(self.backup_result["errors"])
@@ -132,25 +177,30 @@ class DeploymentRunner:
             self.errors.append(compose_result["error"])
             return
 
+        hook_result = self.run_hook("release_before_deploy")
+        if not hook_result["ok"]:
+            self.errors.append(hook_result["error"])
+            return
+
         # A failed deploy may have changed services after this point.
         self.deployment_started = True
         deploy_result = self.deploy(compose_command)
         if not deploy_result["ok"]:
             self.errors.append(deploy_result["error"])
-            self.rollback_result = self.attempt_rollback()
+            self.rollback_result = self.attempt_recovery()
             return
 
         health_result = self.health_checks()
         if not health_result["ok"]:
             self.errors.extend(health_result["errors"])
-            self.rollback_result = self.attempt_rollback()
+            self.rollback_result = self.attempt_recovery()
             return
 
         identity_result = self.record_deployment_identity()
         if not identity_result["ok"]:
             self.errors.append(identity_result["error"])
             self.logger.fail(identity_result["error"])
-            self.rollback_result = self.attempt_rollback()
+            self.rollback_result = self.attempt_recovery()
             return
 
         self.status = "successful"
@@ -164,7 +214,7 @@ class DeploymentRunner:
             self.errors.append("An unexpected error occurred: {0}.".format(error))
             self.logger.fail("An unexpected error occurred during deployment.")
             if self.deployment_started:
-                self.rollback_result = self.attempt_rollback()
+                self.rollback_result = self.attempt_recovery()
 
         # Always clean up and report, even when a stage raises an error.
         try:

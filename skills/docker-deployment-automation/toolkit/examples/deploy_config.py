@@ -37,4 +37,11 @@ CONFIG = {
         # Replace this with a project-specific recovery command.
         "command": ["python", "scripts/rollback.py", "{backup_dir}"],
     },
+    "hooks": {
+        # Optional commands from the backup and release toolkits.
+        # "backup_before_deploy": ["backup-restore", "backup", "--config", "backup_config.py"],
+        # "release_before_deploy": ["release", "tag", "--config", "release_config.py"],
+        # "restore_on_failure": ["backup-restore", "restore", "--config", "backup_config.py", "--backup-dir", "{backup_dir}", "--yes"],
+        # "release_rollback_on_failure": ["release", "rollback-tag", "--config", "release_config.py", "--version", "{commit_sha}"],
+    },
 }
