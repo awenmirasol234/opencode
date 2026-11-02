@@ -1,1 +1,27 @@
 service.json
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+build/
+dist/
+*.egg-info/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Editor and operating system files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Deployment runtime artifacts
+.deployment/
+backups/
+logs/
+*.log
