@@ -107,6 +107,13 @@ environment file, validates it before backups, and records it only after
 deployment and health checks succeed. Set `require_previous_sha` to `True`
 when rollback must have an existing deployed version.
 
+Optional `hooks` values run project commands at fixed points in the
+deployment. Hook names are `backup_before_deploy`, `release_before_deploy`,
+`restore_on_failure`, and `release_rollback_on_failure`. Each hook value is
+a command list and may use the `{project_dir}`, `{backup_dir}`,
+`{commit_sha}`, and `{previous_commit_sha}` placeholders. A failed hook stops
+the deployment. A failed failure hook is reported as a recovery error.
+
 ## Failure behavior
 
 - Preflight, backup, and Compose validation failures stop without rollback.

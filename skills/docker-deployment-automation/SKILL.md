@@ -244,6 +244,10 @@ Apply terminal colors safely:
 - Remove only safe temporary resources in `scripts/cleanup.py`.
 - Orchestrate stages, failures, rollback, cleanup, reporting, and exit codes in `deploy.py`.
 
+## Hooks
+
+The reusable toolkit supports optional project commands through the `hooks` configuration value. Hook names are `backup_before_deploy`, `release_before_deploy`, `restore_on_failure`, and `release_rollback_on_failure`. Each hook value is a command list. Hook commands may use the `{project_dir}`, `{backup_dir}`, `{commit_sha}`, and `{previous_commit_sha}` placeholders. A failed hook stops the deployment. A failed failure hook is reported as a recovery error.
+
 ## Code quality
 
 - Use standard Python features and existing project dependencies.
