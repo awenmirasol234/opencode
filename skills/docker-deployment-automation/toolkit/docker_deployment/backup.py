@@ -3,16 +3,13 @@ import time
 from datetime import datetime
 
 from .commands import format_command
-from .config import project_directory, project_path
+from .config import path_inside_project, project_directory, project_path
 
 
 def _safe_project_path(config, value):
     # Backups must stay inside the project.
     path = project_path(config, value)
-    project_dir = project_directory(config)
-    try:
-        path.relative_to(project_dir)
-    except ValueError:
+    if not path_inside_project(config, path):
         return None
     return path
 

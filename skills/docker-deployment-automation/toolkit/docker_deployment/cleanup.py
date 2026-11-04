@@ -1,6 +1,6 @@
 import shutil
 
-from .config import project_directory, project_path
+from .config import path_inside_project, project_directory, project_path
 
 
 def _inside(path, parent):
@@ -20,7 +20,7 @@ def clean(config, logger):
 
     for value in config.get("temporary_paths", []):
         path = project_path(config, value)
-        if not _inside(path, project_dir):
+        if not path_inside_project(config, path):
             errors.append("The cleanup path is outside the project: {0}.".format(value))
             continue
         if path == project_dir:

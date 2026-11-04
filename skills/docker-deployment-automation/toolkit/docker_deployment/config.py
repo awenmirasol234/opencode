@@ -1,6 +1,5 @@
 import os
 import re
-import tempfile
 from pathlib import Path
 
 
@@ -56,8 +55,8 @@ def _valid_commit_sha(value):
     return COMMIT_SHA_PATTERN.fullmatch(value.strip().lower()) is not None
 
 
-def _path_inside_project(config, path):
-    # State files must not write outside the project.
+def path_inside_project(config, path):
+    # Paths used for writes must stay inside the project.
     project_dir = project_directory(config)
     try:
         path.relative_to(project_dir)
@@ -99,7 +98,7 @@ def read_deployment_identity(config):
             "errors": ["The deployment commit SHA state file is invalid."],
         }
     state_path = project_path(config, state_file)
-    if not _path_inside_project(config, state_path):
+    if not path_inside_project(config, state_path):
         return {
             "ok": False,
             "errors": ["The deployment commit SHA state file must stay inside the project."],
@@ -143,27 +142,17 @@ def save_deployment_identity(identity):
     if state_path is None or not _valid_commit_sha(commit_sha):
         return {"ok": False, "error": "The deployment commit SHA could not be saved."}
 
-    temporary_path = None
+    temporary_path = state_path.with_name(state_path.name + ".tmp")
     try:
         # Write a complete file before replacing the current state.
         state_path.parent.mkdir(parents=True, exist_ok=True)
-        descriptor, temporary_name = tempfile.mkstemp(
-            prefix=".{0}.".format(state_path.name),
-            dir=str(state_path.parent),
-            text=True,
-        )
-        temporary_path = Path(temporary_name)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as state_file:
-            state_file.write(commit_sha + "\n")
+        temporary_path.write_text(commit_sha + "\n", encoding="utf-8")
         os.replace(str(temporary_path), str(state_path))
-        temporary_path = None
     except OSError:
+        try:
+            temporary_path.unlink()
+        except OSError:
+            pass
         return {"ok": False, "error": "The deployment commit SHA could not be saved."}
-    finally:
-        if temporary_path is not None:
-            try:
-                temporary_path.unlink()
-            except OSError:
-                pass
 
     return {"ok": True, "error": ""}
