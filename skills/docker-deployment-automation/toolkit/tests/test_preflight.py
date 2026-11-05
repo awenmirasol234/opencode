@@ -8,7 +8,7 @@ from docker_deployment.preflight import run_preflight
 
 
 class PreflightTests(unittest.TestCase):
-    def test_missing_project_does_not_raise_when_disk_space_is_configured(self):
+    def test_missing_project_fails_without_disk_space_checking(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root_directory = Path(temporary_directory)
             logger = Logger(root_directory / "logs" / "preflight.log")
@@ -20,7 +20,6 @@ class PreflightTests(unittest.TestCase):
                 {
                     "project_dir": str(root_directory / "missing"),
                     "compose_files": ["compose.yaml"],
-                    "minimum_free_space_mb": 100,
                     "deployment": {
                         "commit_sha_env": "GIT_COMMIT_SHA",
                         "state_file": ".deployment/current-sha",

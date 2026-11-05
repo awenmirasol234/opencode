@@ -62,7 +62,7 @@ class HookTests(unittest.TestCase):
         }
         return config
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_hooks_run_before_backup_and_deploy(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)

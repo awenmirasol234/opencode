@@ -186,7 +186,7 @@ class RunnerTests(unittest.TestCase):
             ],
         )
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_runs_stages_in_order(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -201,7 +201,7 @@ class RunnerTests(unittest.TestCase):
         self.assertLess(config_index, deploy_index)
         self.assertLess(deploy_index, health_index)
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_preflight_failure_does_not_deploy_or_rollback(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -215,7 +215,7 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(any("up" in command for command in command_runner.commands))
         self.assertFalse(any(command[0] == "rollback" for command in command_runner.commands))
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_deployment_failure_triggers_rollback(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -226,7 +226,7 @@ class RunnerTests(unittest.TestCase):
         self.assertNotEqual(exit_code, 0)
         self.assertTrue(any(command[0] == "rollback" for command in command_runner.commands))
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_health_failure_triggers_rollback(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -274,7 +274,7 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(command_runner.health_failures, 1)
         self.assertEqual(self.health_sleep.call_args_list, [])
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_deployment_lock_is_released_after_success(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -287,7 +287,7 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertFalse((project_directory / ".deployment" / "test.lock").exists())
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_existing_deployment_lock_stops_before_preflight(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -304,7 +304,7 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(any("up" in command for command in command_runner.commands))
         self.assertTrue(lock_path.exists())
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_invalid_deployment_lock_path_stops_before_preflight(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -317,7 +317,7 @@ class RunnerTests(unittest.TestCase):
         self.assertNotEqual(exit_code, 0)
         self.assertFalse(any("up" in command for command in command_runner.commands))
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_backup_failure_does_not_trigger_rollback(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -330,7 +330,7 @@ class RunnerTests(unittest.TestCase):
         self.assertNotEqual(exit_code, 0)
         self.assertFalse(any(command[0] == "rollback" for command in command_runner.commands))
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_compose_validation_failure_does_not_trigger_rollback(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -342,7 +342,7 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(any("up" in command for command in command_runner.commands))
         self.assertFalse(any(command[0] == "rollback" for command in command_runner.commands))
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_database_is_ready_before_database_backup(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -363,7 +363,7 @@ class RunnerTests(unittest.TestCase):
         backup_index = next(index for index, command in enumerate(command_runner.commands) if command[0] == "db-backup")
         self.assertLess(readiness_index, backup_index)
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_database_services_start_before_database_readiness(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -391,7 +391,7 @@ class RunnerTests(unittest.TestCase):
         )
         self.assertLess(start_index, readiness_index)
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_required_images_are_pulled_before_application_start(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -410,7 +410,7 @@ class RunnerTests(unittest.TestCase):
         )
         self.assertLess(pull_index, deploy_index)
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_docker_engine_failure_stops_before_deployment(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -421,7 +421,7 @@ class RunnerTests(unittest.TestCase):
         self.assertNotEqual(exit_code, 0)
         self.assertFalse(any("up" in command for command in command_runner.commands))
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_missing_required_image_stops_before_deployment(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -434,7 +434,7 @@ class RunnerTests(unittest.TestCase):
         self.assertNotEqual(exit_code, 0)
         self.assertFalse(any("up" in command for command in command_runner.commands))
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_disabled_stages_are_skipped(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -449,7 +449,7 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse((project_directory / "backups").exists())
         self.assertFalse((project_directory / ".deployment" / "deployment.lock").exists())
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_database_readiness_timeout_stops_before_backup(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -470,7 +470,7 @@ class RunnerTests(unittest.TestCase):
         )
         self.assertFalse(any("up" in command for command in command_runner.commands))
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_rollback_failure_returns_nonzero(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -481,7 +481,7 @@ class RunnerTests(unittest.TestCase):
         self.assertNotEqual(exit_code, 0)
         self.assertTrue(any(command[0] == "rollback" for command in command_runner.commands))
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_missing_commit_sha_stops_before_backup(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -495,7 +495,7 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(any(command[0] == "db-backup" for command in command_runner.commands))
         self.assertFalse(any("up" in command for command in command_runner.commands))
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_commit_sha_is_used_in_deployment_and_saved(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -516,7 +516,7 @@ class RunnerTests(unittest.TestCase):
         state_path = project_directory / ".deployment" / "current-sha"
         self.assertEqual(state_path.read_text(encoding="utf-8").strip(), "a" * 40)
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_rollback_receives_the_previous_commit_sha(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
@@ -539,7 +539,7 @@ class RunnerTests(unittest.TestCase):
         )
         self.assertEqual(rollback_command[1], "b" * 40)
 
-    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    @patch("docker_deployment.commands.shutil.which", return_value="docker")
     def test_required_previous_commit_sha_is_validated(self, unused_which):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)

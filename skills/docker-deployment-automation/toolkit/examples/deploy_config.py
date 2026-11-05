@@ -22,7 +22,6 @@ CONFIG = {
     "temporary_paths": [".deployment-tmp"],
     # Add host-mounted database or application data paths here.
     "protected_paths": ["data"],
-    "minimum_free_space_mb": 100,
     # These images are checked during preflight. Compose pulls images again
     # before application startup when compose.pull_args is configured.
     "required_images": [],

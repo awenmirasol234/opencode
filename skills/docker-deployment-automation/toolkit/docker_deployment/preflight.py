@@ -1,5 +1,4 @@
 import os
-import shutil
 
 from .commands import find_compose_command
 from .config import (
@@ -58,20 +57,6 @@ def run_preflight(config, command_runner, logger):
     else:
         errors.append("The project directory is not writable.")
         logger.fail("The project directory is not writable.")
-
-    minimum_free_space = config.get("minimum_free_space_mb", 0)
-    if minimum_free_space and project_dir.is_dir():
-        try:
-            usage = shutil.disk_usage(str(project_dir))
-            available_mb = usage.free / (1024 * 1024)
-            if available_mb >= minimum_free_space:
-                logger.ok("The available disk space is sufficient.")
-            else:
-                errors.append("The available disk space is too low.")
-                logger.fail("The available disk space is too low.")
-        except OSError:
-            errors.append("The available disk space could not be checked.")
-            logger.fail("The available disk space could not be checked.")
 
     identity_result = read_deployment_identity(config)
     deployment_identity = None

@@ -95,8 +95,7 @@ Required useful values are:
 - `required_images`: Docker images that must be available during preflight.
 
 Optional values include `database`, `compose`, `required_services`,
-`minimum_free_space_mb`, `temporary_paths`,
-`protected_paths`, `backup_dir`, and `log_dir`.
+`temporary_paths`, `protected_paths`, `backup_dir`, and `log_dir`.
 
 The optional `backup_enabled`, `rollback_enabled`, `deployment_lock`, and
 `cleanup_enabled` settings default to `True`.
@@ -112,8 +111,8 @@ verify that no deployment is active before removing a stale lock manually.
 ### Preflight checks
 
 Before changing services, the runner checks the project directory, Compose
-files, environment values, read and write permissions, configured free space,
-the deployment SHA, Docker Compose, and the Docker Engine. Each value in
+files, environment values, read and write permissions, the deployment SHA,
+Docker Compose, and the Docker Engine. Each value in
 `required_images` is checked with `docker image inspect`. A failed required
 check stops the deployment before backup or rollback.
 

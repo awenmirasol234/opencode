@@ -164,7 +164,7 @@ Apply terminal colors safely:
 
 ### 3. Run preflight checks
 
-- Check required tools, Docker, Docker Compose, Compose configuration, required environment variable names, permissions, disk space, and project-specific prerequisites.
+- Check required tools, Docker, Docker Compose, Compose configuration, required environment variable names, permissions, and project-specific prerequisites.
 - Check each configured `required_images` value with `docker image inspect`.
 - Detect the available Docker Compose command without assuming a shell or operating system.
 - Stop immediately when a required check fails.
@@ -264,7 +264,7 @@ Apply terminal colors safely:
 
 - Configure terminal/file logging and secret redaction in `docker_deployment/logger.py`.
 - Acquire and release the deployment lock in `docker_deployment/lock.py`.
-- Validate tools, configuration, environment, permissions, and disk space in `docker_deployment/preflight.py`.
+- Validate tools, configuration, environment, and permissions in `docker_deployment/preflight.py`.
 - Create, verify, and describe recovery backups in `docker_deployment/backup.py`.
 - Validate Compose and execute deployment commands in `docker_deployment/deployment.py`.
 - Perform configurable readiness and functionality checks in `docker_deployment/health.py`.
