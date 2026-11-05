@@ -60,9 +60,12 @@ Commands are written as lists. For example:
 The commands are not run through a shell.
 
 The fixed deployment order is implemented by `DeploymentRunner.run()`. Most
-projects only need the configuration file. The runner calls these steps in
-order: preflight, backup, validation, deployment, health checks, cleanup, and
-reporting. A project with a special stage can override one of the small stage
+projects only need the configuration file. The runner acquires the deployment
+lock, runs preflight, runs the optional backup hook, waits for database
+readiness, creates backups, validates Compose, runs the optional release hook,
+deploys, polls health checks, saves the SHA, cleans up, and reports the result.
+A deployment or health-check failure triggers the configured rollback before
+cleanup. A project with a special stage can override one of the small stage
 methods.
 
 ## Configuration
@@ -81,6 +84,10 @@ Required useful values are:
 
 Optional values include `database`, `required_services`, `minimum_free_space_mb`,
 `temporary_paths`, `protected_paths`, `backup_dir`, and `log_dir`.
+
+The lock defaults to `.deployment/deployment.lock`. It is created atomically
+and must stay inside the project. The runner does not remove an existing lock;
+verify that no deployment is active before removing a stale lock manually.
 
 Database configuration supports an explicit readiness command followed by an
 explicit backup command. Set `readiness_timeout` for a time-based limit;
@@ -134,6 +141,7 @@ cannot be listed as temporary cleanup paths.
 ## Failure behavior
 
 - Preflight, backup, and Compose validation failures stop without rollback.
+- A lock failure stops before preflight and skips cleanup commands.
 - Deployment and health-check failures trigger the configured rollback.
 - Unexpected failures trigger rollback after deployment may have started.
 - Cleanup and final reporting run after every outcome.

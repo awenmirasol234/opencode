@@ -16,22 +16,16 @@ Keep the implementation small and explicit. Add only code required for the proje
 
 ## Usage
 
-Run the deployment from PowerShell or a Unix shell with:
-
-```bash
-python deploy.py
-```
-
-For the reusable toolkit, install it from `toolkit/` and run:
+Install the reusable toolkit from `toolkit/` and run it from the target project:
 
 ```bash
 python -m docker_deployment --config deploy_config.py
 ```
 
-See `toolkit/README.md` and `toolkit/examples/deploy_config.py` for the small
+See `toolkit/README.md` and `toolkit/examples/deploy_config.py` for the
 configuration format. The toolkit does not guess project-specific commands.
 Its `DeploymentRunner` class keeps the deployment order fixed while allowing a
-project to override a simple stage method when configuration is not enough.
+project to override a small stage method when configuration is not enough.
 
 Use Python and standard library features for cross-platform behavior. Use `pathlib` for paths and `subprocess` with argument lists and `shell=False` for commands. Do not use Bash-only syntax, shell scripts, Unix-only paths, or platform-specific command chaining.
 
@@ -47,21 +41,27 @@ Before writing code:
 - Treat environment values and external configuration as untrusted input.
 - Fail safely when project behavior is unclear instead of guessing.
 
-## Create the required structure
+## Reusable toolkit structure
 
 ```text
-deploy.py
-scripts/
-    logger.py
-    preflight.py
-    backup.py
-    deployment.py
-    health.py
-    rollback.py
-    cleanup.py
+toolkit/
+    docker_deployment/
+        backup.py
+        cleanup.py
+        commands.py
+        config.py
+        deployment.py
+        health.py
+        lock.py
+        logger.py
+        preflight.py
+        rollback.py
+        runner.py
+    examples/deploy_config.py
+    tests/
 ```
 
-Give each module one responsibility. Keep all orchestration in `deploy.py`.
+Give each module one responsibility. Keep orchestration in `runner.py`.
 
 ## Deployment flow
 
@@ -69,29 +69,34 @@ Run these stages in order:
 
 ```mermaid
 flowchart TD
-    A[Initialize logger] --> B[Run preflight checks]
+    A[Initialize logger] --> B[Acquire deployment lock]
+    B -->|Pass| C[Run preflight checks]
+    B -->|Fail| Z[Report lock failure]
 
-    B -->|Pass| C[Wait for database readiness and create backups]
-    B -->|Fail| K[Clean up safely]
+    C -->|Pass| D[Run backup preparation hook]
+    C -->|Fail| K[Clean up safely]
 
-    C -->|Pass| D[Validate Compose]
-    C -->|Fail| K
+    D --> E[Wait for database readiness and create backups]
+    E -->|Pass| F[Validate Compose]
+    E -->|Fail| K
 
-    D -->|Pass| E[Deploy application]
-    D -->|Fail| K
+    F -->|Pass| G[Run release hook]
+    F -->|Fail| K
 
-    E -->|Pass| F[Wait 30 seconds]
-    F --> G[Run health checks once]
-    E -->|Fail| H[Rollback]
+    G --> H[Deploy application]
+    H -->|Pass| I[Poll health checks]
+    H -->|Fail| J[Rollback]
 
-    G -->|Pass| K
-    G -->|Fail| H
+    I -->|Pass| L[Save deployed SHA]
+    I -->|Timeout| J
 
-    H --> I[Verify rollback outcome]
-    I --> K
+    J --> M[Verify rollback health]
+    M --> K[Clean up safely]
+    L --> K
 
-    K --> L[Report final result]
-    L --> M[Exit]
+    K --> N[Report final result]
+    N --> O[Exit]
+    Z --> N
 ```
 
 Send an unexpected exception to rollback when deployment may have started. Otherwise, send it to cleanup. Send both paths to final reporting.
@@ -149,7 +154,15 @@ Apply terminal colors safely:
 - Disable colors when output is not a TTY or when `NO_COLOR` is set.
 - Keep colors and formatting out of exit codes and file log content.
 
-### 2. Run preflight checks
+### 2. Acquire the deployment lock
+
+- Acquire the configured `lock_file` atomically before preflight checks.
+- Keep the lock while deployment, rollback, and cleanup are in progress. Release it before final reporting.
+- Reject lock paths outside the project directory.
+- Do not remove an existing lock automatically. Confirm that no deployment is running before removing a stale lock.
+- If the lock cannot be acquired, do not run deployment, rollback, or cleanup commands.
+
+### 3. Run preflight checks
 
 - Check required tools, Docker, Docker Compose, Compose configuration, required environment variable names, permissions, disk space, and project-specific prerequisites.
 - Detect the available Docker Compose command without assuming a shell or operating system.
@@ -157,7 +170,7 @@ Apply terminal colors safely:
 - Do not deploy or roll back after a preflight failure.
 - Run safe cleanup, report the result, and return a nonzero exit code.
 
-### 3. Create backups
+### 4. Create backups
 
 - Back up the database when the project supports it.
 - When a database is used, wait until its initialization has completely finished and its readiness check succeeds before creating the backup.
@@ -165,18 +178,19 @@ Apply terminal colors safely:
 - Back up required configuration and recovery files.
 - Use unique timestamped locations and preserve existing backups.
 - Verify every required backup.
+- Use `readiness_timeout` for a time limit, or use `readiness_retries` and `readiness_interval`.
 - Never overwrite the only valid backup.
 - Stop immediately when a required backup fails.
 - Do not deploy or roll back after a backup failure.
 - Preserve recovery files, run safe cleanup, report the result, and return a nonzero exit code.
 
-### 4. Validate Compose
+### 5. Validate Compose
 
 - Validate the Docker Compose configuration before changing running services.
-- Keep Compose validation in `scripts/deployment.py`.
+- Keep Compose validation in `docker_deployment/deployment.py`.
 - Stop when validation fails. Do not roll back because no deployment change has occurred.
 
-### 5. Deploy the application
+### 6. Deploy the application
 
 - Deploy with the project’s Compose configuration.
 - Pass commands as argument lists and capture output and exit codes.
@@ -184,16 +198,17 @@ Apply terminal colors safely:
 - Avoid destructive Docker commands.
 - Treat deployment failures as rollback-triggering failures.
 
-### 6. Wait and run health checks
+### 7. Wait and run health checks
 
-- After deployment succeeds, wait exactly 30 seconds without polling.
+- After deployment succeeds, run the configured health checks immediately.
+- Poll until all checks pass or `health.timeout` expires, waiting `health.interval` between attempts.
 - Check applicable container status, Nginx availability, backend API availability, and representative application behavior.
 - Skip checks for services the project does not use.
-- Run each configured health check once after the wait.
 - Read check timeouts, endpoints, and expected responses from the project’s existing configuration.
 - Trigger rollback when a required health check fails.
+- Save the deployed SHA only after all required health checks pass.
 
-### 7. Roll back when required
+### 8. Roll back when required
 
 - Restore the previous working application version after a deployment or health-check failure.
 - Use preserved recovery artifacts.
@@ -203,20 +218,22 @@ Apply terminal colors safely:
 - Do not claim rollback success without recovery and verification.
 - Report rollback failures and return a nonzero exit code.
 
-### 8. Clean up safely
+### 9. Clean up safely
 
 - Remove only eligible temporary files and resources.
 - Never remove Docker volumes, persistent application or database data, backups, recovery files, deployment logs, or rollback resources.
 - Never use destructive Docker cleanup commands that can remove persistent data.
+- Protect host-mounted data paths by listing them in `protected_paths`.
+- Treat a deployment-lock failure as a no-op for cleanup because another deployment may own the temporary resources.
 - Attempt cleanup after successful and failed executions.
 
-### 9. Report the result
+### 10. Report the result
 
 - Generate a summary for every outcome.
 - Include deployment status, completed and failed stages, health-check results, rollback outcome, cleanup outcome, relevant errors, and backup and log locations.
 - Run final reporting after every failure, including unexpected exceptions.
 
-### 10. Exit
+### 11. Exit
 
 - Return exit code `0` only when deployment and required health checks succeed.
 - Return a nonzero exit code for every required failure, failed rollback, or unexpected exception.
@@ -224,6 +241,8 @@ Apply terminal colors safely:
 ## Failure handling
 
 - Stop normal deployment after a required stage fails.
+- Stop before preflight when the deployment lock cannot be acquired.
+- Skip cleanup commands when the lock was not acquired.
 - Skip rollback after preflight, backup, or Compose validation failures because no service change has occurred.
 - Attempt rollback after deployment or health-check failures.
 - Attempt rollback after an unexpected exception if deployment may have started.
@@ -235,14 +254,15 @@ Apply terminal colors safely:
 
 ## Assign module responsibilities
 
-- Configure terminal/file logging and secret redaction in `scripts/logger.py`.
-- Validate tools, configuration, environment, permissions, and disk space in `scripts/preflight.py`.
-- Create, verify, and describe recovery backups in `scripts/backup.py`.
-- Validate Compose and execute deployment commands in `scripts/deployment.py`.
-- Perform configurable readiness and functionality checks in `scripts/health.py`.
-- Restore the previous version and verify recovery in `scripts/rollback.py`.
-- Remove only safe temporary resources in `scripts/cleanup.py`.
-- Orchestrate stages, failures, rollback, cleanup, reporting, and exit codes in `deploy.py`.
+- Configure terminal/file logging and secret redaction in `docker_deployment/logger.py`.
+- Acquire and release the deployment lock in `docker_deployment/lock.py`.
+- Validate tools, configuration, environment, permissions, and disk space in `docker_deployment/preflight.py`.
+- Create, verify, and describe recovery backups in `docker_deployment/backup.py`.
+- Validate Compose and execute deployment commands in `docker_deployment/deployment.py`.
+- Perform configurable readiness and functionality checks in `docker_deployment/health.py`.
+- Restore the previous version and verify recovery in `docker_deployment/rollback.py`.
+- Remove only safe temporary resources in `docker_deployment/cleanup.py`.
+- Orchestrate stages, failures, rollback, cleanup, reporting, and exit codes in `docker_deployment/runner.py`.
 
 ## Hooks
 
@@ -275,11 +295,14 @@ Provide a concise summary. Include:
 Use mocks or safe test doubles for commands that could affect production services. Verify the following:
 
 - [ ] Verify the execution order.
+- [ ] Confirm that the deployment lock prevents concurrent runs and is released after cleanup.
 - [ ] Confirm that database initialization completes before database backups are created.
 - [ ] Confirm that preflight and backup failures stop deployment and do not trigger rollback.
 - [ ] Confirm that Compose validation occurs before deployment.
 - [ ] Confirm that Compose validation failures do not trigger rollback.
 - [ ] Confirm that deployment and health-check failures trigger rollback.
+- [ ] Confirm that health checks poll until success or the configured timeout.
+- [ ] Confirm that the deployment SHA is saved only after successful health checks.
 - [ ] Confirm that rollback failures are reported and return a nonzero exit code.
 - [ ] Confirm that final reporting runs for every outcome.
 - [ ] Confirm that cleanup protects backups, logs, volumes, persistent data, and recovery files.

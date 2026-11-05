@@ -3,6 +3,7 @@ CONFIG = {
     "compose_files": ["compose.yaml"],
     "env_file": ".env",
     "required_env": ["APP_ENV"],
+    # The runner creates this file atomically and removes it after cleanup.
     "lock_file": ".deployment/deployment.lock",
     "deployment": {
         "commit_sha_env": "GIT_COMMIT_SHA",
@@ -13,6 +14,7 @@ CONFIG = {
     "backup_dir": "backups",
     "log_dir": "logs",
     "temporary_paths": [".deployment-tmp"],
+    # Add host-mounted database or application data paths here.
     "protected_paths": ["data"],
     "minimum_free_space_mb": 100,
     "required_services": [],
@@ -30,6 +32,7 @@ CONFIG = {
         # "readiness_timeout": 60,
     },
     "health": {
+        # Health checks run immediately, then repeat until they pass or timeout.
         "timeout": 120,
         "interval": 5,
     },
