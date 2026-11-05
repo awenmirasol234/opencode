@@ -76,14 +76,14 @@ flowchart TD
     C -->|Pass| D[Run backup preparation hook]
     C -->|Fail| K[Clean up safely]
 
-    D --> E[Wait for database readiness and create backups]
+    D --> E[Start database services, wait for readiness, and create backups]
     E -->|Pass| F[Validate Compose]
     E -->|Fail| K
 
     F -->|Pass| G[Run release hook]
     F -->|Fail| K
 
-    G --> H[Deploy application]
+    G --> H[Pull images and deploy application]
     H -->|Pass| I[Poll health checks]
     H -->|Fail| J[Rollback]
 
@@ -165,6 +165,7 @@ Apply terminal colors safely:
 ### 3. Run preflight checks
 
 - Check required tools, Docker, Docker Compose, Compose configuration, required environment variable names, permissions, disk space, and project-specific prerequisites.
+- Check each configured `required_images` value with `docker image inspect`.
 - Detect the available Docker Compose command without assuming a shell or operating system.
 - Stop immediately when a required check fails.
 - Do not deploy or roll back after a preflight failure.
@@ -178,6 +179,8 @@ Apply terminal colors safely:
 - Back up required configuration and recovery files.
 - Use unique timestamped locations and preserve existing backups.
 - Verify every required backup.
+- Compare copied configuration files with their sources.
+- Require database backup files to be non-empty and support a project-specific verification command.
 - Use `readiness_timeout` for a time limit, or use `readiness_retries` and `readiness_interval`.
 - Never overwrite the only valid backup.
 - Stop immediately when a required backup fails.
@@ -193,6 +196,7 @@ Apply terminal colors safely:
 ### 6. Deploy the application
 
 - Deploy with the project’s Compose configuration.
+- Pull configured images before starting application services.
 - Pass commands as argument lists and capture output and exit codes.
 - Record failures without exposing secrets.
 - Avoid destructive Docker commands.
@@ -201,8 +205,11 @@ Apply terminal colors safely:
 ### 7. Wait and run health checks
 
 - After deployment succeeds, run the configured health checks immediately.
-- Poll until all checks pass or `health.timeout` expires, waiting `health.interval` between attempts.
+- Poll until all required checks pass or `health.timeout` expires, waiting `health.interval` between attempts.
 - Check applicable container status, Nginx availability, backend API availability, and representative application behavior.
+- For container checks, treat `starting` and `unhealthy` as polling states and missing, exited, or dead containers as failures.
+- Allow noncritical checks with `required: false`.
+- Capture command output, container status, and recent container logs when checks fail.
 - Skip checks for services the project does not use.
 - Read check timeouts, endpoints, and expected responses from the project’s existing configuration.
 - Trigger rollback when a required health check fails.
@@ -231,6 +238,7 @@ Apply terminal colors safely:
 
 - Generate a summary for every outcome.
 - Include deployment status, completed and failed stages, health-check results, rollback outcome, cleanup outcome, relevant errors, and backup and log locations.
+- Include deployment duration and current and previous deployment SHA values.
 - Run final reporting after every failure, including unexpected exceptions.
 
 ### 11. Exit
@@ -267,6 +275,12 @@ Apply terminal colors safely:
 ## Hooks
 
 The reusable toolkit supports optional project commands through the `hooks` configuration value. Hook names are `backup_before_deploy`, `release_before_deploy`, `restore_on_failure`, and `release_rollback_on_failure`. Each hook value is a command list. Hook commands may use the `{project_dir}`, `{backup_dir}`, `{commit_sha}`, and `{previous_commit_sha}` placeholders. A failed hook stops the deployment. A failed failure hook is reported as a recovery error.
+
+The top-level `backup_enabled`, `rollback_enabled`, `deployment_lock`, and
+`cleanup_enabled` settings default to `True`. The deployment lock is held
+through cleanup and released before final reporting. The default
+`compose.pull_args` value is `["pull"]`; set it to an empty list to skip image
+pulling.
 
 ## Code quality
 

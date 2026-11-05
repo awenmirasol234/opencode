@@ -31,7 +31,7 @@ toolkit files will then be used immediately:
 python -m pip install -e ./path/to/toolkit
 ```
 
-The toolkit has no runtime dependencies outside the Python standard library.
+The toolkit uses only Python standard library modules at runtime.
 
 ## Use
 
@@ -60,13 +60,24 @@ Commands are written as lists. For example:
 The commands are not run through a shell.
 
 The fixed deployment order is implemented by `DeploymentRunner.run()`. Most
-projects only need the configuration file. The runner acquires the deployment
-lock, runs preflight, runs the optional backup hook, waits for database
-readiness, creates backups, validates Compose, runs the optional release hook,
-deploys, polls health checks, saves the SHA, cleans up, and reports the result.
-A deployment or health-check failure triggers the configured rollback before
-cleanup. A project with a special stage can override one of the small stage
-methods.
+projects only need the configuration file. The runner:
+
+1. Initializes redacted terminal and file logging.
+2. Acquires the deployment lock.
+3. Runs preflight checks.
+4. Runs the optional backup preparation hook.
+5. Starts configured database services and waits for readiness.
+6. Creates and verifies backups.
+7. Validates the Compose configuration.
+8. Runs the optional release hook.
+9. Pulls images and deploys the application.
+10. Polls health checks until they pass or time out.
+11. Saves the deployment SHA only after successful health checks.
+12. Rolls back failed deployments and verifies rollback health.
+13. Removes only safe temporary paths.
+14. Releases the lock and reports the result.
+
+A project with a special stage can override one of the small stage methods.
 
 ## Configuration
 
@@ -79,25 +90,40 @@ Required useful values are:
 - `deployment`: commit SHA and rollback state configuration.
 - `lock_file`: deployment lock path, which prevents concurrent deployments.
 - `backup_paths`: project files or directories to preserve.
-- `health_checks`: explicit command or URL checks.
+- `health_checks`: explicit command, URL, or container checks.
 - `rollback.command`: explicit project recovery command.
 - `required_images`: Docker images that must be available during preflight.
 
-Optional values include `database`, `required_services`, `minimum_free_space_mb`,
-`temporary_paths`, `protected_paths`, `backup_dir`, and `log_dir`.
+Optional values include `database`, `compose`, `required_services`,
+`minimum_free_space_mb`, `temporary_paths`,
+`protected_paths`, `backup_dir`, and `log_dir`.
 
 The optional `backup_enabled`, `rollback_enabled`, `deployment_lock`, and
 `cleanup_enabled` settings default to `True`.
+
+When `deployment_lock` is disabled, the runner does not create or remove a
+lock file. When cleanup is disabled, configured temporary paths are preserved.
+Disabling backups or rollback is reported in the final result.
 
 The lock defaults to `.deployment/deployment.lock`. It is created atomically
 and must stay inside the project. The runner does not remove an existing lock;
 verify that no deployment is active before removing a stale lock manually.
 
+### Preflight checks
+
+Before changing services, the runner checks the project directory, Compose
+files, environment values, read and write permissions, configured free space,
+the deployment SHA, Docker Compose, and the Docker Engine. Each value in
+`required_images` is checked with `docker image inspect`. A failed required
+check stops the deployment before backup or rollback.
+
 Database configuration supports optional database services, an explicit
-readiness command, and an explicit backup command. Set `readiness_timeout` for
-a time-based limit; otherwise `readiness_retries` and `readiness_interval`
-control the wait. The
-backup command may use these placeholders:
+readiness command, and an explicit backup command. Configured services are
+started with Compose before readiness polling begins. Set `readiness_timeout`
+for a time-based limit. The default timeout is 120 seconds and the default
+polling interval is 5 seconds. Use `readiness_retries` instead of a timeout
+when a fixed retry count is preferred; `readiness_timeout` takes precedence
+when both are set. The backup command may use these placeholders:
 
 - `{backup_dir}`
 - `{backup_file}`
@@ -106,6 +132,10 @@ backup command may use these placeholders:
 Configured database services start before readiness checks. Database backup
 files are checked for existence and non-empty content. A project-specific
 `verify_command` can perform a stronger integrity check.
+
+Configuration and database backups use unique timestamped directories. Copied
+files are compared with their sources. Database backups must be non-empty, and
+`verify_command` can run a database-specific integrity check.
 
 Rollback commands may use `{backup_dir}` and `{project_dir}`.
 Deployment and rollback commands may also use `{commit_sha}` and
@@ -133,7 +163,7 @@ a command list and may use the `{project_dir}`, `{backup_dir}`,
 `{commit_sha}`, and `{previous_commit_sha}` placeholders. A failed hook stops
 the deployment. A failed failure hook is reported as a recovery error.
 
-Health checks are polled until all checks pass or the configured timeout
+Required health checks are polled until they pass or the configured timeout
 expires:
 
 ```python
@@ -149,9 +179,10 @@ polled; missing, exited, and dead containers fail immediately. Set `required`
 to `False` for a noncritical check. Container checks require a Compose
 healthcheck unless `require_health` is set to `False`.
 
-The deployment pulls images before starting application services. Set
-`compose.pull_args` to an empty list to skip that step. Failed container health
-checks include recent container logs and health output when available.
+The deployment pulls images before starting application services. The default is
+`compose.pull_args: ["pull"]`. Set `compose.pull_args` to an empty list to skip
+that step. Failed health checks include command output, container status, and
+recent container logs when available.
 
 Cleanup never removes backups, logs, deployment state, or Docker volumes. Add
 host-mounted database or application data paths to `protected_paths` so they
@@ -166,10 +197,13 @@ cannot be listed as temporary cleanup paths.
 - Cleanup and final reporting run after every outcome.
 - Backups, logs, volumes, and persistent data are not removed by cleanup.
 - Exit code `0` is returned only after deployment and health checks succeed.
+- The final report includes status, duration, current and previous SHA values,
+  backup status, rollback status, cleanup status, and diagnostics.
 
-After deployment, the toolkit polls each configured health check until the
-application is ready or the health timeout expires. A deployment lock is held
-from preflight through cleanup and is released on every completed run.
+After deployment, the toolkit polls each configured health check until all
+required checks pass or the health timeout expires. Noncritical checks are
+reported as warnings. A deployment lock is held from preflight through cleanup
+and is released on every completed run.
 
 ## Tests
 
