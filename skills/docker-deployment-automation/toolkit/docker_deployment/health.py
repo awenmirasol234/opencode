@@ -5,9 +5,6 @@ from urllib.request import urlopen
 from .config import project_directory
 
 
-CONTAINER_READY_DELAY_SECONDS = 30
-
-
 def _check_command(check, command_runner, config):
     command = check.get("command")
     if not command:
@@ -51,29 +48,47 @@ def run_health_checks(config, command_runner, logger):
         logger.warning("No health checks were configured.")
         return {"ok": False, "errors": ["No health checks were configured."]}
 
-    # Wait once for startup; do not poll the health checks.
+    health_config = config.get("health", {})
+    if not isinstance(health_config, dict):
+        logger.fail("The health-check configuration is invalid.")
+        return {"ok": False, "errors": ["The health-check configuration is invalid."]}
+
+    timeout = health_config.get("timeout", 120)
+    interval = health_config.get("interval", 5)
+    if not isinstance(timeout, (int, float)) or isinstance(timeout, bool) or timeout < 0:
+        logger.fail("The health-check timeout is invalid.")
+        return {"ok": False, "errors": ["The health-check timeout is invalid."]}
+    if not isinstance(interval, (int, float)) or isinstance(interval, bool) or interval < 0:
+        logger.fail("The health-check interval is invalid.")
+        return {"ok": False, "errors": ["The health-check interval is invalid."]}
+
     logger.info(
-        "Waiting {0} seconds for the containers to become ready.".format(
-            CONTAINER_READY_DELAY_SECONDS
+        "Polling health checks for up to {0} seconds with a {1}-second interval.".format(
+            timeout, interval
         )
     )
-    time.sleep(CONTAINER_READY_DELAY_SECONDS)
-    logger.info("Running health checks once.")
-    errors = []
-    for check in checks:
-        name = check.get("name", "Application health")
-        passed, last_error = _run_check(check, command_runner, config)
+    deadline = time.monotonic() + timeout
+    while True:
+        errors = []
+        for check in checks:
+            name = check.get("name", "Application health")
+            passed, last_error = _run_check(check, command_runner, config)
 
-        if passed:
-            logger.ok("{0} passed.".format(name))
-        else:
-            error = "{0} failed: {1}".format(name, last_error)
-            logger.fail(error)
-            errors.append(error)
+            if passed:
+                logger.ok("{0} passed.".format(name))
+            else:
+                error = "{0} failed: {1}".format(name, last_error)
+                logger.warning(error)
+                errors.append(error)
 
-    if errors:
-        logger.fail("Required health checks failed.")
-        return {"ok": False, "errors": errors}
+        if not errors:
+            logger.success("Health checks completed successfully.")
+            return {"ok": True, "errors": []}
 
-    logger.success("Health checks completed successfully.")
-    return {"ok": True, "errors": []}
+        if time.monotonic() >= deadline:
+            logger.fail("Required health checks failed before the timeout.")
+            return {"ok": False, "errors": errors}
+
+        if interval > 0:
+            remaining = deadline - time.monotonic()
+            time.sleep(min(interval, max(remaining, 0)))

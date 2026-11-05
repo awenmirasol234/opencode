@@ -11,11 +11,25 @@ def _inside(path, parent):
         return False
 
 
+def _protected(path, protected_paths):
+    for protected_path in protected_paths:
+        if _inside(path, protected_path) or _inside(protected_path, path):
+            return True
+    return False
+
+
 def clean(config, logger):
     # Never remove backups or logs needed after a failure.
     project_dir = project_directory(config)
     backup_dir = project_path(config, config.get("backup_dir", "backups"))
     log_dir = project_path(config, config.get("log_dir", "logs"))
+    protected_paths = [
+        backup_dir,
+        log_dir,
+        project_path(config, ".deployment"),
+    ]
+    for value in config.get("protected_paths", []):
+        protected_paths.append(project_path(config, value))
     errors = []
 
     for value in config.get("temporary_paths", []):
@@ -26,7 +40,7 @@ def clean(config, logger):
         if path == project_dir:
             errors.append("The project directory cannot be removed.")
             continue
-        if _inside(path, backup_dir) or _inside(path, log_dir):
+        if _protected(path, protected_paths):
             logger.warning("The protected cleanup path was preserved: {0}.".format(value))
             continue
         if not path.exists():

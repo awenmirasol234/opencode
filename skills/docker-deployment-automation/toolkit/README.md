@@ -74,15 +74,18 @@ Required useful values are:
 - `env_file`: optional environment file.
 - `required_env`: required variable names.
 - `deployment`: commit SHA and rollback state configuration.
+- `lock_file`: deployment lock path, which prevents concurrent deployments.
 - `backup_paths`: project files or directories to preserve.
 - `health_checks`: explicit command or URL checks.
 - `rollback.command`: explicit project recovery command.
 
-Optional values include `database`, `required_services`,
-`minimum_free_space_mb`, `temporary_paths`, `backup_dir`, and `log_dir`.
+Optional values include `database`, `required_services`, `minimum_free_space_mb`,
+`temporary_paths`, `protected_paths`, `backup_dir`, and `log_dir`.
 
 Database configuration supports an explicit readiness command followed by an
-explicit backup command. The backup command may use these placeholders:
+explicit backup command. Set `readiness_timeout` for a time-based limit;
+otherwise `readiness_retries` and `readiness_interval` control the wait. The
+backup command may use these placeholders:
 
 - `{backup_dir}`
 - `{backup_file}`
@@ -114,6 +117,20 @@ a command list and may use the `{project_dir}`, `{backup_dir}`,
 `{commit_sha}`, and `{previous_commit_sha}` placeholders. A failed hook stops
 the deployment. A failed failure hook is reported as a recovery error.
 
+Health checks are polled until all checks pass or the configured timeout
+expires:
+
+```python
+"health": {
+    "timeout": 120,
+    "interval": 5,
+},
+```
+
+Cleanup never removes backups, logs, deployment state, or Docker volumes. Add
+host-mounted database or application data paths to `protected_paths` so they
+cannot be listed as temporary cleanup paths.
+
 ## Failure behavior
 
 - Preflight, backup, and Compose validation failures stop without rollback.
@@ -123,8 +140,9 @@ the deployment. A failed failure hook is reported as a recovery error.
 - Backups, logs, volumes, and persistent data are not removed by cleanup.
 - Exit code `0` is returned only after deployment and health checks succeed.
 
-After deployment, the toolkit waits 30 seconds for containers to start and then
-runs each configured health check once. It does not poll health checks.
+After deployment, the toolkit polls each configured health check until the
+application is ready or the health timeout expires. A deployment lock is held
+from preflight through cleanup and is released on every completed run.
 
 ## Tests
 

@@ -48,20 +48,38 @@ def _wait_for_database(config, command_runner, logger):
 
     retries = database.get("readiness_retries", 30)
     interval = database.get("readiness_interval", 2)
-    if retries < 1:
+    timeout = database.get("readiness_timeout")
+    if not isinstance(retries, int) or isinstance(retries, bool) or retries < 1:
         logger.fail("The database readiness retry count is invalid.")
         return {"ok": False, "error": "The database readiness retry count is invalid."}
+    if not isinstance(interval, (int, float)) or isinstance(interval, bool) or interval < 0:
+        logger.fail("The database readiness interval is invalid.")
+        return {"ok": False, "error": "The database readiness interval is invalid."}
+    if timeout is not None and (
+        not isinstance(timeout, (int, float)) or isinstance(timeout, bool) or timeout < 0
+    ):
+        logger.fail("The database readiness timeout is invalid.")
+        return {"ok": False, "error": "The database readiness timeout is invalid."}
     logger.info("Waiting for the database to become ready.")
     last_error = "The database did not become ready."
-    for attempt in range(retries):
+    deadline = None
+    if timeout is not None:
+        deadline = time.monotonic() + timeout
+    attempt = 0
+    while True:
         result = command_runner(readiness_command, str(project_directory(config)), 60)
         if result.ok():
             logger.ok("The database is ready.")
             return {"ok": True, "error": ""}
         if result.stderr:
             last_error = result.stderr.strip()
-        if attempt + 1 < retries:
-            time.sleep(interval)
+        attempt += 1
+        if deadline is not None:
+            if time.monotonic() >= deadline:
+                break
+        elif attempt >= retries:
+            break
+        time.sleep(interval)
 
     logger.fail("The database did not become ready.")
     return {"ok": False, "error": last_error}

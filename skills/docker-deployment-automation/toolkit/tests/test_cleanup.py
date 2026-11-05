@@ -72,6 +72,26 @@ class CleanupTests(unittest.TestCase):
 
         self.assertFalse(result["ok"])
 
+    def test_preserves_configured_persistent_paths(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            project_directory = Path(temporary_directory)
+            data_path = project_directory / "database-data"
+            data_path.mkdir()
+            logger = Logger(project_directory / "logs" / "cleanup.log")
+
+            result = clean(
+                {
+                    "project_dir": str(project_directory),
+                    "temporary_paths": ["database-data"],
+                    "protected_paths": ["database-data"],
+                },
+                logger,
+            )
+            logger.close()
+
+            self.assertTrue(result["ok"])
+            self.assertTrue(data_path.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

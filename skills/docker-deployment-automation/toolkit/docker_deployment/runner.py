@@ -8,6 +8,7 @@ from .deployment import deploy as deploy_application
 from .deployment import validate_compose
 from .health import run_health_checks
 from .logger import Logger
+from .lock import DeploymentLock
 from .preflight import run_preflight
 from .rollback import rollback as restore_rollback
 
@@ -39,6 +40,8 @@ class DeploymentRunner:
         self.errors = []
         self.deployment_started = False
         self.status = "failed"
+        self.lock = DeploymentLock(config)
+        self.lock_result = None
 
     def initialize(self):
         secret_values = list(environment_values(self.config).values())
@@ -86,6 +89,23 @@ class DeploymentRunner:
     def cleanup(self):
         return clean(self.config, self.logger)
 
+    def acquire_lock(self):
+        self.logger.info("Acquiring the deployment lock.")
+        result = self.lock.acquire()
+        if result["ok"]:
+            self.logger.ok("The deployment lock was acquired.")
+        else:
+            self.logger.fail(result["error"])
+        return result
+
+    def release_lock(self):
+        result = self.lock.release()
+        if result["ok"]:
+            self.logger.ok("The deployment lock was released.")
+        else:
+            self.logger.fail(result["error"])
+        return result
+
     def report(self):
         self.logger.info("Deployment result: {0}.".format(self.status))
         if self.backup_result and self.backup_result.get("backup_dir"):
@@ -97,7 +117,9 @@ class DeploymentRunner:
             self.logger.info("Rollback result: {0}.".format(rollback_status))
         if self.cleanup_result:
             cleanup_status = "failed"
-            if self.cleanup_result["ok"]:
+            if self.cleanup_result.get("skipped"):
+                cleanup_status = "skipped"
+            elif self.cleanup_result["ok"]:
                 cleanup_status = "successful"
             self.logger.info("Cleanup result: {0}.".format(cleanup_status))
         for error in self.errors:
@@ -209,29 +231,42 @@ class DeploymentRunner:
         self.initialize()
 
         try:
-            self._run_stages()
-        except Exception as error:
-            self.errors.append("An unexpected error occurred: {0}.".format(error))
-            self.logger.fail("An unexpected error occurred during deployment.")
-            if self.deployment_started:
-                self.rollback_result = self.attempt_recovery()
+            try:
+                self.lock_result = self.acquire_lock()
+                if self.lock_result["ok"]:
+                    self._run_stages()
+                else:
+                    self.errors.append(self.lock_result["error"])
+            except Exception as error:
+                self.errors.append("An unexpected error occurred: {0}.".format(error))
+                self.logger.fail("An unexpected error occurred during deployment.")
+                if self.deployment_started:
+                    self.rollback_result = self.attempt_recovery()
+        finally:
+            # Always clean up and report, even when a stage raises an error.
+            if self.lock_result and self.lock_result["ok"]:
+                try:
+                    self.cleanup_result = self.cleanup()
+                    if not self.cleanup_result["ok"]:
+                        self.errors.extend(self.cleanup_result["errors"])
+                except Exception as error:
+                    self.errors.append("Cleanup failed unexpectedly: {0}.".format(error))
+                    self.logger.fail("Cleanup failed unexpectedly.")
+            else:
+                self.cleanup_result = {"ok": True, "errors": [], "skipped": True}
 
-        # Always clean up and report, even when a stage raises an error.
-        try:
-            self.cleanup_result = self.cleanup()
-            if not self.cleanup_result["ok"]:
-                self.errors.extend(self.cleanup_result["errors"])
-        except Exception as error:
-            self.errors.append("Cleanup failed unexpectedly: {0}.".format(error))
-            self.logger.fail("Cleanup failed unexpectedly.")
+            if self.lock_result and self.lock_result["ok"]:
+                release_result = self.release_lock()
+                if not release_result["ok"]:
+                    self.errors.append(release_result["error"])
 
-        if self.rollback_result and not self.rollback_result["ok"]:
-            self.errors.append(self.rollback_result["error"])
-        if self.errors:
-            self.status = "failed"
+            if self.rollback_result and not self.rollback_result["ok"]:
+                self.errors.append(self.rollback_result["error"])
+            if self.errors:
+                self.status = "failed"
 
-        self.report()
-        self.logger.close()
+            self.report()
+            self.logger.close()
         if self.status == "successful":
             return 0
         return 1

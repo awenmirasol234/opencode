@@ -10,10 +10,20 @@ from docker_deployment.runner import DeploymentRunner, run
 
 
 class FakeCommandRunner:
-    def __init__(self, fail_deployment=False, fail_health_once=False, fail_config=False, fail_rollback=False):
+    def __init__(
+        self,
+        fail_deployment=False,
+        fail_health_once=False,
+        fail_health_always=False,
+        fail_database_readiness=False,
+        fail_config=False,
+        fail_rollback=False,
+    ):
         self.commands = []
         self.fail_deployment = fail_deployment
         self.fail_health_once = fail_health_once
+        self.fail_health_always = fail_health_always
+        self.fail_database_readiness = fail_database_readiness
         self.fail_config = fail_config
         self.fail_rollback = fail_rollback
         self.health_failures = 0
@@ -25,10 +35,16 @@ class FakeCommandRunner:
             return CommandResult(0, "Docker Compose version", "")
 
         if command and command[0] == "health-check":
+            if self.fail_health_always:
+                self.health_failures += 1
+                return CommandResult(1, "", "Health check failed")
             if self.fail_health_once and self.health_failures == 0:
                 self.health_failures += 1
                 return CommandResult(1, "", "Health check failed")
             return CommandResult(0, "", "")
+
+        if command and command[0] == "db-ready" and self.fail_database_readiness:
+            return CommandResult(1, "", "Database is not ready")
 
         if command and command[0] == "rollback":
             if self.fail_rollback:
@@ -206,28 +222,88 @@ class RunnerTests(unittest.TestCase):
         state_path.parent.mkdir()
         state_path.write_text("b" * 40, encoding="utf-8")
         command_runner = FakeCommandRunner(fail_health_once=True)
+        config = make_config(project_directory)
+        config["health"] = {"timeout": 0, "interval": 2}
 
-        exit_code = run(make_config(project_directory), command_runner)
+        exit_code = run(config, command_runner)
 
         self.assertNotEqual(exit_code, 0)
         self.assertTrue(any(command[0] == "rollback" for command in command_runner.commands))
         self.assertGreaterEqual(command_runner.health_failures, 1)
         self.assertEqual(state_path.read_text(encoding="utf-8").strip(), "b" * 40)
 
-    def test_health_checks_wait_30_seconds_and_run_once(self):
+    def test_health_checks_poll_until_the_application_is_ready(self):
         temporary_directory, project_directory = self.create_project()
         self.addCleanup(temporary_directory.cleanup)
         logger = Logger(project_directory / "logs" / "health.log")
         command_runner = FakeCommandRunner(fail_health_once=True)
         config = make_config(project_directory)
-        config["health_checks"][0]["retries"] = 5
+        config["health"] = {"timeout": 10, "interval": 2}
+
+        result = run_health_checks(config, command_runner, logger)
+
+        logger.close()
+        self.assertTrue(result["ok"])
+        self.assertEqual(command_runner.health_failures, 1)
+        self.assertEqual(self.health_sleep.call_args_list, [call(2)])
+
+    def test_health_checks_stop_after_configured_timeout(self):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        logger = Logger(project_directory / "logs" / "health.log")
+        command_runner = FakeCommandRunner(fail_health_always=True)
+        config = make_config(project_directory)
+        config["health"] = {"timeout": 0, "interval": 2}
 
         result = run_health_checks(config, command_runner, logger)
 
         logger.close()
         self.assertFalse(result["ok"])
         self.assertEqual(command_runner.health_failures, 1)
-        self.assertEqual(self.health_sleep.call_args_list, [call(30)])
+        self.assertEqual(self.health_sleep.call_args_list, [])
+
+    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    def test_deployment_lock_is_released_after_success(self, unused_which):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        command_runner = FakeCommandRunner()
+        config = make_config(project_directory)
+        config["lock_file"] = ".deployment/test.lock"
+
+        exit_code = run(config, command_runner)
+
+        self.assertEqual(exit_code, 0)
+        self.assertFalse((project_directory / ".deployment" / "test.lock").exists())
+
+    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    def test_existing_deployment_lock_stops_before_preflight(self, unused_which):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        lock_path = project_directory / ".deployment" / "test.lock"
+        lock_path.parent.mkdir()
+        lock_path.write_text("another deployment\n", encoding="utf-8")
+        command_runner = FakeCommandRunner()
+        config = make_config(project_directory)
+        config["lock_file"] = ".deployment/test.lock"
+
+        exit_code = run(config, command_runner)
+
+        self.assertNotEqual(exit_code, 0)
+        self.assertFalse(any("up" in command for command in command_runner.commands))
+        self.assertTrue(lock_path.exists())
+
+    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    def test_invalid_deployment_lock_path_stops_before_preflight(self, unused_which):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        command_runner = FakeCommandRunner()
+        config = make_config(project_directory)
+        config["lock_file"] = "../deployment.lock"
+
+        exit_code = run(config, command_runner)
+
+        self.assertNotEqual(exit_code, 0)
+        self.assertFalse(any("up" in command for command in command_runner.commands))
 
     @patch("docker_deployment.preflight.shutil.which", return_value="docker")
     def test_backup_failure_does_not_trigger_rollback(self, unused_which):
@@ -274,6 +350,27 @@ class RunnerTests(unittest.TestCase):
         readiness_index = next(index for index, command in enumerate(command_runner.commands) if command[0] == "db-ready")
         backup_index = next(index for index, command in enumerate(command_runner.commands) if command[0] == "db-backup")
         self.assertLess(readiness_index, backup_index)
+
+    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    def test_database_readiness_timeout_stops_before_backup(self, unused_which):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        command_runner = FakeCommandRunner(fail_database_readiness=True)
+        config = make_config(project_directory)
+        config["database"] = {
+            "readiness_command": ["db-ready"],
+            "readiness_timeout": 0,
+            "readiness_interval": 2,
+        }
+
+        exit_code = run(config, command_runner)
+
+        self.assertNotEqual(exit_code, 0)
+        self.assertEqual(
+            len([command for command in command_runner.commands if command[0] == "db-ready"]),
+            1,
+        )
+        self.assertFalse(any("up" in command for command in command_runner.commands))
 
     @patch("docker_deployment.preflight.shutil.which", return_value="docker")
     def test_rollback_failure_returns_nonzero(self, unused_which):

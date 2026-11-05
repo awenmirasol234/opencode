@@ -3,6 +3,7 @@ CONFIG = {
     "compose_files": ["compose.yaml"],
     "env_file": ".env",
     "required_env": ["APP_ENV"],
+    "lock_file": ".deployment/deployment.lock",
     "deployment": {
         "commit_sha_env": "GIT_COMMIT_SHA",
         "state_file": ".deployment/current-sha",
@@ -12,6 +13,7 @@ CONFIG = {
     "backup_dir": "backups",
     "log_dir": "logs",
     "temporary_paths": [".deployment-tmp"],
+    "protected_paths": ["data"],
     "minimum_free_space_mb": 100,
     "required_services": [],
     "compose": {
@@ -24,6 +26,12 @@ CONFIG = {
         # "backup_file": "database.backup",
         "readiness_retries": 30,
         "readiness_interval": 2,
+        # Use readiness_timeout instead of retries for a time-based limit.
+        # "readiness_timeout": 60,
+    },
+    "health": {
+        "timeout": 120,
+        "interval": 5,
     },
     "health_checks": [
         {
