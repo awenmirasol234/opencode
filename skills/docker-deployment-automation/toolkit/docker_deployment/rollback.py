@@ -9,6 +9,7 @@ def rollback(
     command_runner,
     logger,
     deployment_identity=None,
+    compose_command=None,
 ):
     logger.info("Rolling back the application.")
     rollback_config = config.get("rollback", {})
@@ -33,10 +34,19 @@ def rollback(
         return {"ok": False, "error": "The application rollback failed."}
 
     # A rollback is complete only after the restored app passes its checks.
-    health_result = run_health_checks(config, command_runner, logger)
+    health_result = run_health_checks(
+        config,
+        command_runner,
+        logger,
+        compose_command,
+    )
     if not health_result["ok"]:
         logger.fail("Rollback verification failed.")
-        return {"ok": False, "error": "Rollback verification failed."}
+        return {
+            "ok": False,
+            "error": "Rollback verification failed.",
+            "diagnostics": health_result.get("diagnostics", []),
+        }
 
     logger.success("Rollback completed and was verified successfully.")
-    return {"ok": True, "error": ""}
+    return {"ok": True, "error": "", "diagnostics": []}

@@ -1,3 +1,4 @@
+import filecmp
 import shutil
 import time
 from datetime import datetime
@@ -39,6 +40,24 @@ def _copy_path(source, project_dir, backup_dir):
     return destination
 
 
+def _verify_copy(source, destination):
+    if source.is_dir():
+        for source_path in source.rglob("*"):
+            relative_path = source_path.relative_to(source)
+            destination_path = destination / relative_path
+            if source_path.is_dir():
+                if not destination_path.is_dir():
+                    return False
+            elif not destination_path.is_file():
+                return False
+            elif not filecmp.cmp(source_path, destination_path, shallow=False):
+                return False
+        return True
+    if not destination.is_file():
+        return False
+    return filecmp.cmp(source, destination, shallow=False)
+
+
 def _wait_for_database(config, command_runner, logger):
     # The database must be ready before its backup is made.
     database = config.get("database", {})
@@ -47,8 +66,10 @@ def _wait_for_database(config, command_runner, logger):
         return {"ok": True, "error": ""}
 
     retries = database.get("readiness_retries", 30)
-    interval = database.get("readiness_interval", 2)
+    interval = database.get("readiness_interval", 5)
     timeout = database.get("readiness_timeout")
+    if timeout is None and "readiness_retries" not in database:
+        timeout = 120
     if not isinstance(retries, int) or isinstance(retries, bool) or retries < 1:
         logger.fail("The database readiness retry count is invalid.")
         return {"ok": False, "error": "The database readiness retry count is invalid."}
@@ -79,7 +100,11 @@ def _wait_for_database(config, command_runner, logger):
                 break
         elif attempt >= retries:
             break
-        time.sleep(interval)
+        if deadline is not None:
+            remaining = deadline - time.monotonic()
+            time.sleep(min(interval, max(remaining, 0)))
+        else:
+            time.sleep(interval)
 
     logger.fail("The database did not become ready.")
     return {"ok": False, "error": last_error}
@@ -105,7 +130,7 @@ def create_backups(config, command_runner, logger):
             continue
         try:
             destination = _copy_path(source, project_dir, backup_dir)
-            if destination.exists():
+            if _verify_copy(source, destination):
                 logger.ok("The backup was saved for {0}.".format(value))
             else:
                 errors.append("The backup could not be verified: {0}.".format(value))
@@ -131,12 +156,26 @@ def create_backups(config, command_runner, logger):
         command = format_command(backup_command, values)
         result = command_runner(command, str(project_dir), 300)
         if result.ok():
-            if backup_file_path.exists():
+            if backup_file_path.is_file() and backup_file_path.stat().st_size > 0:
                 logger.ok("The database backup was saved.")
             else:
                 errors.append("The database backup file could not be verified.")
         else:
             errors.append("The database backup command failed.")
+
+        verify_command = database.get("verify_command")
+        if verify_command and backup_file_path.is_file():
+            verify_values = {
+                "backup_dir": str(backup_dir),
+                "backup_file": str(backup_file_path),
+                "project_dir": str(project_dir),
+            }
+            formatted_verify_command = format_command(verify_command, verify_values)
+            verify_result = command_runner(formatted_verify_command, str(project_dir), 300)
+            if verify_result.ok():
+                logger.ok("The database backup integrity was verified.")
+            else:
+                errors.append("The database backup integrity check failed.")
 
     if errors:
         for error in errors:

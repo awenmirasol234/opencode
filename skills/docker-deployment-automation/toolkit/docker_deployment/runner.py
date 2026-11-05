@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 
 from .backup import create_backups
@@ -5,6 +6,7 @@ from .cleanup import clean
 from .commands import format_command, run_command
 from .config import environment_values, project_directory, project_path, save_deployment_identity
 from .deployment import deploy as deploy_application
+from .deployment import start_database_services
 from .deployment import validate_compose
 from .health import run_health_checks
 from .logger import Logger
@@ -42,9 +44,26 @@ class DeploymentRunner:
         self.status = "failed"
         self.lock = DeploymentLock(config)
         self.lock_result = None
+        self.compose_command = None
+        self.health_result = None
+        self.diagnostics = []
+        self.started_at = None
 
     def initialize(self):
-        secret_values = list(environment_values(self.config).values())
+        self.started_at = time.monotonic()
+        environment = environment_values(self.config)
+        secret_values = list(environment.values())
+        deployment = self.config.get("deployment", {})
+        if not isinstance(deployment, dict):
+            deployment = {}
+        commit_sha_env = deployment.get("commit_sha_env", "GIT_COMMIT_SHA")
+        commit_sha = environment.get(commit_sha_env, "")
+        if commit_sha:
+            filtered_secret_values = []
+            for value in secret_values:
+                if value != commit_sha:
+                    filtered_secret_values.append(value)
+            secret_values = filtered_secret_values
         self.logger = Logger(_log_path(self.config), secret_values=secret_values)
         self.logger.info("Starting the Docker deployment.")
 
@@ -53,6 +72,14 @@ class DeploymentRunner:
 
     def backup(self):
         return create_backups(self.config, self.command_runner, self.logger)
+
+    def start_database(self):
+        return start_database_services(
+            self.config,
+            self.compose_command,
+            self.command_runner,
+            self.logger,
+        )
 
     def validate(self, compose_command):
         return validate_compose(
@@ -72,7 +99,13 @@ class DeploymentRunner:
         )
 
     def health_checks(self):
-        return run_health_checks(self.config, self.command_runner, self.logger)
+        self.health_result = run_health_checks(
+            self.config,
+            self.command_runner,
+            self.logger,
+            self.compose_command,
+        )
+        return self.health_result
 
     def rollback(self):
         return restore_rollback(
@@ -81,6 +114,7 @@ class DeploymentRunner:
             self.command_runner,
             self.logger,
             self.deployment_identity,
+            self.compose_command,
         )
 
     def record_deployment_identity(self):
@@ -90,6 +124,9 @@ class DeploymentRunner:
         return clean(self.config, self.logger)
 
     def acquire_lock(self):
+        if self.config.get("deployment_lock", True) is False:
+            self.logger.warning("The deployment lock is disabled.")
+            return {"ok": True, "error": "", "skipped": True}
         self.logger.info("Acquiring the deployment lock.")
         result = self.lock.acquire()
         if result["ok"]:
@@ -99,6 +136,8 @@ class DeploymentRunner:
         return result
 
     def release_lock(self):
+        if self.lock_result and self.lock_result.get("skipped"):
+            return {"ok": True, "error": "", "skipped": True}
         result = self.lock.release()
         if result["ok"]:
             self.logger.ok("The deployment lock was released.")
@@ -108,11 +147,29 @@ class DeploymentRunner:
 
     def report(self):
         self.logger.info("Deployment result: {0}.".format(self.status))
+        if self.started_at is not None:
+            duration = time.monotonic() - self.started_at
+            self.logger.info("Deployment duration: {0:.2f} seconds.".format(duration))
+        if self.deployment_identity:
+            self.logger.info(
+                "Current deployment SHA: {0}.".format(
+                    self.deployment_identity.get("commit_sha", "")
+                )
+            )
+            previous_sha = self.deployment_identity.get("previous_commit_sha", "")
+            if previous_sha:
+                self.logger.info("Previous deployment SHA: {0}.".format(previous_sha))
+            else:
+                self.logger.info("Previous deployment SHA: none.")
         if self.backup_result and self.backup_result.get("backup_dir"):
             self.logger.info("Backup location: {0}.".format(self.backup_result["backup_dir"]))
+        if self.backup_result and self.backup_result.get("skipped"):
+            self.logger.warning("Backups were skipped by configuration.")
         if self.rollback_result:
             rollback_status = "failed"
-            if self.rollback_result["ok"]:
+            if self.rollback_result.get("skipped"):
+                rollback_status = "skipped"
+            elif self.rollback_result["ok"]:
                 rollback_status = "successful"
             self.logger.info("Rollback result: {0}.".format(rollback_status))
         if self.cleanup_result:
@@ -124,6 +181,8 @@ class DeploymentRunner:
             self.logger.info("Cleanup result: {0}.".format(cleanup_status))
         for error in self.errors:
             self.logger.fail(error)
+        for diagnostic in self.diagnostics:
+            self.logger.fail(diagnostic)
 
     def run_hook(self, name):
         hooks = self.config.get("hooks", {})
@@ -158,7 +217,11 @@ class DeploymentRunner:
             return {"ok": False, "error": message, "skipped": False}
 
     def attempt_recovery(self):
+        if self.config.get("rollback_enabled", True) is False:
+            self.logger.warning("Rollback is disabled.")
+            return {"ok": True, "error": "", "skipped": True, "diagnostics": []}
         result = self.attempt_rollback()
+        self.diagnostics.extend(result.get("diagnostics", []))
         for hook_name in ("restore_on_failure", "release_rollback_on_failure"):
             hook_result = self.run_hook(hook_name)
             if not hook_result["ok"]:
@@ -173,6 +236,7 @@ class DeploymentRunner:
             return {
                 "ok": False,
                 "error": "Rollback failed unexpectedly: {0}.".format(error),
+                "diagnostics": [],
             }
 
     def _run_stages(self):
@@ -182,19 +246,30 @@ class DeploymentRunner:
             return
 
         self.deployment_identity = preflight_result.get("deployment_identity")
-        compose_command = preflight_result["compose_command"]
+        self.compose_command = preflight_result["compose_command"]
 
-        hook_result = self.run_hook("backup_before_deploy")
-        if not hook_result["ok"]:
-            self.errors.append(hook_result["error"])
-            return
+        if self.config.get("backup_enabled", True):
+            hook_result = self.run_hook("backup_before_deploy")
+            if not hook_result["ok"]:
+                self.errors.append(hook_result["error"])
+                return
 
-        self.backup_result = self.backup()
-        if not self.backup_result["ok"]:
-            self.errors.extend(self.backup_result["errors"])
-            return
+        if self.config.get("database", {}).get("services"):
+            database_result = self.start_database()
+            if not database_result["ok"]:
+                self.errors.append(database_result["error"])
+                return
 
-        compose_result = self.validate(compose_command)
+        if self.config.get("backup_enabled", True):
+            self.backup_result = self.backup()
+            if not self.backup_result["ok"]:
+                self.errors.extend(self.backup_result["errors"])
+                return
+        else:
+            self.logger.warning("Backups are disabled.")
+            self.backup_result = {"ok": True, "errors": [], "skipped": True}
+
+        compose_result = self.validate(self.compose_command)
         if not compose_result["ok"]:
             self.errors.append(compose_result["error"])
             return
@@ -206,7 +281,7 @@ class DeploymentRunner:
 
         # A failed deploy may have changed services after this point.
         self.deployment_started = True
-        deploy_result = self.deploy(compose_command)
+        deploy_result = self.deploy(self.compose_command)
         if not deploy_result["ok"]:
             self.errors.append(deploy_result["error"])
             self.rollback_result = self.attempt_recovery()
@@ -215,6 +290,7 @@ class DeploymentRunner:
         health_result = self.health_checks()
         if not health_result["ok"]:
             self.errors.extend(health_result["errors"])
+            self.diagnostics.extend(health_result.get("diagnostics", []))
             self.rollback_result = self.attempt_recovery()
             return
 
@@ -246,7 +322,11 @@ class DeploymentRunner:
             # Always clean up and report, even when a stage raises an error.
             if self.lock_result and self.lock_result["ok"]:
                 try:
-                    self.cleanup_result = self.cleanup()
+                    if self.config.get("cleanup_enabled", True):
+                        self.cleanup_result = self.cleanup()
+                    else:
+                        self.logger.warning("Cleanup is disabled.")
+                        self.cleanup_result = {"ok": True, "errors": [], "skipped": True}
                     if not self.cleanup_result["ok"]:
                         self.errors.extend(self.cleanup_result["errors"])
                 except Exception as error:

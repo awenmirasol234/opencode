@@ -18,6 +18,8 @@ class FakeCommandRunner:
         fail_database_readiness=False,
         fail_config=False,
         fail_rollback=False,
+        fail_engine=False,
+        fail_required_image=False,
     ):
         self.commands = []
         self.fail_deployment = fail_deployment
@@ -26,6 +28,8 @@ class FakeCommandRunner:
         self.fail_database_readiness = fail_database_readiness
         self.fail_config = fail_config
         self.fail_rollback = fail_rollback
+        self.fail_engine = fail_engine
+        self.fail_required_image = fail_required_image
         self.health_failures = 0
 
     def __call__(self, command, cwd=None, timeout=None):
@@ -33,6 +37,14 @@ class FakeCommandRunner:
 
         if command == ["docker", "compose", "version"]:
             return CommandResult(0, "Docker Compose version", "")
+
+        if command == ["docker", "info"] and self.fail_engine:
+            return CommandResult(1, "", "Docker is unavailable")
+
+        if command[:4] == ["docker", "image", "inspect", "example:latest"]:
+            if self.fail_required_image:
+                return CommandResult(1, "", "Image is unavailable")
+            return CommandResult(0, "image", "")
 
         if command and command[0] == "health-check":
             if self.fail_health_always:
@@ -350,6 +362,92 @@ class RunnerTests(unittest.TestCase):
         readiness_index = next(index for index, command in enumerate(command_runner.commands) if command[0] == "db-ready")
         backup_index = next(index for index, command in enumerate(command_runner.commands) if command[0] == "db-backup")
         self.assertLess(readiness_index, backup_index)
+
+    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    def test_database_services_start_before_database_readiness(self, unused_which):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        command_runner = FakeCommandRunner()
+        config = make_config(project_directory)
+        config["database"] = {
+            "services": ["db"],
+            "readiness_command": ["db-ready"],
+            "readiness_retries": 1,
+            "readiness_interval": 0,
+        }
+
+        exit_code = run(config, command_runner)
+
+        self.assertEqual(exit_code, 0)
+        start_index = next(
+            index
+            for index, command in enumerate(command_runner.commands)
+            if "up" in command and "db" in command
+        )
+        readiness_index = next(
+            index
+            for index, command in enumerate(command_runner.commands)
+            if command[0] == "db-ready"
+        )
+        self.assertLess(start_index, readiness_index)
+
+    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    def test_required_images_are_pulled_before_application_start(self, unused_which):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        command_runner = FakeCommandRunner()
+        config = make_config(project_directory)
+        config["required_images"] = ["example:latest"]
+
+        exit_code = run(config, command_runner)
+
+        self.assertEqual(exit_code, 0)
+        pull_index = next(
+            index for index, command in enumerate(command_runner.commands) if "pull" in command
+        )
+        deploy_index = next(
+            index for index, command in enumerate(command_runner.commands) if "up" in command
+        )
+        self.assertLess(pull_index, deploy_index)
+
+    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    def test_docker_engine_failure_stops_before_deployment(self, unused_which):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        command_runner = FakeCommandRunner(fail_engine=True)
+
+        exit_code = run(make_config(project_directory), command_runner)
+
+        self.assertNotEqual(exit_code, 0)
+        self.assertFalse(any("up" in command for command in command_runner.commands))
+
+    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    def test_missing_required_image_stops_before_deployment(self, unused_which):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        command_runner = FakeCommandRunner(fail_required_image=True)
+        config = make_config(project_directory)
+        config["required_images"] = ["example:latest"]
+
+        exit_code = run(config, command_runner)
+
+        self.assertNotEqual(exit_code, 0)
+        self.assertFalse(any("up" in command for command in command_runner.commands))
+
+    @patch("docker_deployment.preflight.shutil.which", return_value="docker")
+    def test_disabled_stages_are_skipped(self, unused_which):
+        temporary_directory, project_directory = self.create_project()
+        self.addCleanup(temporary_directory.cleanup)
+        command_runner = FakeCommandRunner()
+        config = make_config(project_directory)
+        config["backup_enabled"] = False
+        config["cleanup_enabled"] = False
+
+        exit_code = run(config, command_runner)
+
+        self.assertEqual(exit_code, 0)
+        self.assertFalse((project_directory / "backups").exists())
+        self.assertFalse((project_directory / ".deployment" / "deployment.lock").exists())
 
     @patch("docker_deployment.preflight.shutil.which", return_value="docker")
     def test_database_readiness_timeout_stops_before_backup(self, unused_which):

@@ -4,7 +4,11 @@ CONFIG = {
     "env_file": ".env",
     "required_env": ["APP_ENV"],
     # The runner creates this file atomically and removes it after cleanup.
+    "deployment_lock": True,
     "lock_file": ".deployment/deployment.lock",
+    "backup_enabled": True,
+    "rollback_enabled": True,
+    "cleanup_enabled": True,
     "deployment": {
         "commit_sha_env": "GIT_COMMIT_SHA",
         "state_file": ".deployment/current-sha",
@@ -17,19 +21,22 @@ CONFIG = {
     # Add host-mounted database or application data paths here.
     "protected_paths": ["data"],
     "minimum_free_space_mb": 100,
+    # These images are checked during preflight and refreshed before deployment.
+    "required_images": [],
     "required_services": [],
     "compose": {
+        "pull_args": ["pull"],
         "deploy_args": ["up", "-d"],
     },
     "database": {
         # Add project-specific commands only when a database is used.
+        # "services": ["db"],
         # "readiness_command": ["replace", "with", "your", "readiness", "command"],
         # "backup_command": ["replace", "with", "your", "backup", "command", "{backup_file}"],
+        # "verify_command": ["replace", "with", "your", "backup", "verification", "command", "{backup_file}"],
         # "backup_file": "database.backup",
-        "readiness_retries": 30,
-        "readiness_interval": 2,
-        # Use readiness_timeout instead of retries for a time-based limit.
-        # "readiness_timeout": 60,
+        "readiness_timeout": 120,
+        "readiness_interval": 5,
     },
     "health": {
         # Health checks run immediately, then repeat until they pass or timeout.
@@ -42,6 +49,10 @@ CONFIG = {
             "type": "url",
             "url": "http://127.0.0.1:8080/health",
             "expected_status": 200,
+            # Container checks require a Docker healthcheck unless require_health is false.
+            # "type": "container",
+            # "service": "app",
+            # "required": True,
         }
     ],
     "rollback": {

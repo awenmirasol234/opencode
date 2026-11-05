@@ -81,22 +81,31 @@ Required useful values are:
 - `backup_paths`: project files or directories to preserve.
 - `health_checks`: explicit command or URL checks.
 - `rollback.command`: explicit project recovery command.
+- `required_images`: Docker images that must be available during preflight.
 
 Optional values include `database`, `required_services`, `minimum_free_space_mb`,
 `temporary_paths`, `protected_paths`, `backup_dir`, and `log_dir`.
+
+The optional `backup_enabled`, `rollback_enabled`, `deployment_lock`, and
+`cleanup_enabled` settings default to `True`.
 
 The lock defaults to `.deployment/deployment.lock`. It is created atomically
 and must stay inside the project. The runner does not remove an existing lock;
 verify that no deployment is active before removing a stale lock manually.
 
-Database configuration supports an explicit readiness command followed by an
-explicit backup command. Set `readiness_timeout` for a time-based limit;
-otherwise `readiness_retries` and `readiness_interval` control the wait. The
+Database configuration supports optional database services, an explicit
+readiness command, and an explicit backup command. Set `readiness_timeout` for
+a time-based limit; otherwise `readiness_retries` and `readiness_interval`
+control the wait. The
 backup command may use these placeholders:
 
 - `{backup_dir}`
 - `{backup_file}`
 - `{project_dir}`
+
+Configured database services start before readiness checks. Database backup
+files are checked for existence and non-empty content. A project-specific
+`verify_command` can perform a stronger integrity check.
 
 Rollback commands may use `{backup_dir}` and `{project_dir}`.
 Deployment and rollback commands may also use `{commit_sha}` and
@@ -133,6 +142,16 @@ expires:
     "interval": 5,
 },
 ```
+
+Health checks support `command`, `url`, and `container` types. Container checks
+inspect Docker state and health status. `starting` and `unhealthy` states are
+polled; missing, exited, and dead containers fail immediately. Set `required`
+to `False` for a noncritical check. Container checks require a Compose
+healthcheck unless `require_health` is set to `False`.
+
+The deployment pulls images before starting application services. Set
+`compose.pull_args` to an empty list to skip that step. Failed container health
+checks include recent container logs and health output when available.
 
 Cleanup never removes backups, logs, deployment state, or Docker volumes. Add
 host-mounted database or application data paths to `protected_paths` so they

@@ -53,15 +53,25 @@ def run_preflight(config, command_runner, logger):
         errors.append("The project directory is not readable.")
         logger.fail("The project directory is not readable.")
 
+    if os.access(str(project_dir), os.W_OK):
+        logger.ok("The project directory is writable.")
+    else:
+        errors.append("The project directory is not writable.")
+        logger.fail("The project directory is not writable.")
+
     minimum_free_space = config.get("minimum_free_space_mb", 0)
-    if minimum_free_space:
-        usage = shutil.disk_usage(str(project_dir))
-        available_mb = usage.free / (1024 * 1024)
-        if available_mb >= minimum_free_space:
-            logger.ok("The available disk space is sufficient.")
-        else:
-            errors.append("The available disk space is too low.")
-            logger.fail("The available disk space is too low.")
+    if minimum_free_space and project_dir.is_dir():
+        try:
+            usage = shutil.disk_usage(str(project_dir))
+            available_mb = usage.free / (1024 * 1024)
+            if available_mb >= minimum_free_space:
+                logger.ok("The available disk space is sufficient.")
+            else:
+                errors.append("The available disk space is too low.")
+                logger.fail("The available disk space is too low.")
+        except OSError:
+            errors.append("The available disk space could not be checked.")
+            logger.fail("The available disk space could not be checked.")
 
     identity_result = read_deployment_identity(config)
     deployment_identity = None
@@ -83,6 +93,29 @@ def run_preflight(config, command_runner, logger):
     else:
         errors.append("Docker Compose is not available.")
         logger.fail("Docker Compose is not available.")
+
+    docker_result = command_runner(["docker", "info"], str(project_dir), 60)
+    if docker_result.ok():
+        logger.ok("The Docker Engine is available.")
+    else:
+        errors.append("The Docker Engine is not available.")
+        logger.fail("The Docker Engine is not available.")
+
+    for image in config.get("required_images", []):
+        if not isinstance(image, str) or not image.strip():
+            errors.append("A required Docker image name is invalid.")
+            logger.fail("A required Docker image name is invalid.")
+            continue
+        image_result = command_runner(
+            ["docker", "image", "inspect", image],
+            str(project_dir),
+            60,
+        )
+        if image_result.ok():
+            logger.ok("The required Docker image is available: {0}.".format(image))
+        else:
+            errors.append("The required Docker image is not available: {0}.".format(image))
+            logger.fail("The required Docker image is not available: {0}.".format(image))
 
     if errors:
         logger.fail("Preflight checks failed.")
