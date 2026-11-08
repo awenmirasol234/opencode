@@ -2,7 +2,6 @@
 description: Senior software architect responsible for codebase analysis, system architecture, technical planning, dependency analysis, design decisions, and architectural documentation.
 mode: subagent
 steps: 20
-color: "#8B5CF6"
 permissions:
   - action: edit
     resource: "*"

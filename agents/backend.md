@@ -2,7 +2,6 @@
 description: Senior backend engineer responsible for server-side development, APIs, business logic, authentication, authorization, integrations, background jobs, and backend performance.
 mode: subagent
 steps: 35
-color: "#0891B2"
 permissions:
   - action: subagent
     resource: "*"
