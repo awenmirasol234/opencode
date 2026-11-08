@@ -2,7 +2,6 @@
 description: Senior frontend engineer responsible for UI implementation, components, state management, routing, API integration, responsive design, accessibility, and frontend performance.
 mode: subagent
 steps: 35
-color: "#EC4899"
 permissions:
   - action: subagent
     resource: "*"

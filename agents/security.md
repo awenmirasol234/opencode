@@ -2,7 +2,6 @@
 description: Application security specialist responsible for vulnerability analysis, secure coding reviews, authentication, authorization, secrets management, dependency risks, and security recommendations.
 mode: subagent
 steps: 30
-color: "#DC2626"
 permissions:
   - action: edit
     resource: "*"

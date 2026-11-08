@@ -2,7 +2,6 @@
 description: Independent senior code reviewer responsible for reviewing implementation changes, identifying bugs, regressions, maintainability problems, performance issues, and coding standard violations.
 mode: subagent
 steps: 25
-color: "#64748B"
 permissions:
   - action: edit
     resource: "*"

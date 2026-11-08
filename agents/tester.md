@@ -2,7 +2,6 @@
 description: Senior QA automation engineer responsible for test planning, unit testing, integration testing, end-to-end testing, regression testing, test coverage, and quality validation.
 mode: subagent
 steps: 35
-color: "#16A34A"
 permissions:
   - action: edit
     resource: "*"

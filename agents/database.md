@@ -2,7 +2,6 @@
 description: Database specialist responsible for schema design, migrations, SQL, query optimization, indexing, transactions, data integrity, and database performance.
 mode: subagent
 steps: 35
-color: "#D97706"
 permissions:
   - action: subagent
     resource: "*"

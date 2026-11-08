@@ -2,7 +2,6 @@
 description: Senior debugging engineer responsible for root-cause analysis, exception investigation, runtime failures, performance problems, integration failures, and minimal-risk bug fixes.
 mode: subagent
 steps: 35
-color: "#F59E0B"
 permissions:
   - action: subagent
     resource: "*"

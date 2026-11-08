@@ -2,7 +2,6 @@
 description: Senior DevOps and cloud infrastructure engineer responsible for CI/CD, containers, cloud infrastructure, deployment configuration, monitoring, automation, and operational reliability.
 mode: subagent
 steps: 35
-color: "#0D9488"
 permissions:
   - action: subagent
     resource: "*"
