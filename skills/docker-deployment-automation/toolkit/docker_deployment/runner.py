@@ -24,9 +24,7 @@ from .rollback import perform_rollback
 class DeploymentRunner:
     def __init__(self, config, command_runner=None):
         self.config = config
-        self.command_runner = command_runner
-        if self.command_runner is None:
-            self.command_runner = run_command
+        self.command_runner = command_runner or run_command
         self.logger = None
         self.identity = None
         self.compose_command = None
@@ -51,9 +49,7 @@ class DeploymentRunner:
         deployment = section(self.config, "deployment")
         commit_sha_env = deployment.get("commit_sha_env")
         commit_sha = env_values.get(commit_sha_env, "")
-        state_path = project_path(
-            self.config, deployment.get("state_file")
-        )
+        state_path = project_path(self.config, deployment.get("state_file"))
         self.identity = {
             "ok": is_valid_sha(commit_sha),
             "commit_sha": commit_sha,
@@ -63,10 +59,7 @@ class DeploymentRunner:
         self.config["deployment_identity"] = self.identity
         self.logger = Logger(self.log_path(), None, list(env_values.values()))
         self.lock_result = acquire_lock(self.config)
-        self.lock_acquired = False
-        if self.lock_result["ok"]:
-            if not self.lock_result.get("skipped", False):
-                self.lock_acquired = True
+        self.lock_acquired = self.lock_result.get("ok", False) and not self.lock_result.get("skipped", False)
         if not self.lock_result["ok"]:
             self.logger.fail(self.lock_result["error"])
         return self.lock_result
@@ -126,20 +119,17 @@ class DeploymentRunner:
             self.identity,
             self.backup_dir,
         )
-        if not result["ok"]:
+        if result["ok"]:
+            self.run_hooks("release_rollback_on_failure")
+        else:
             self.logger.fail("The rollback failed.")
-            return result
-        self.run_hooks("release_rollback_on_failure")
         return result
 
     def run_hooks(self, hook_name):
         command = section(self.config, "hooks").get(hook_name)
         if not command:
             return True
-        if not self.backup_dir:
-            backup_dir_value = ""
-        else:
-            backup_dir_value = self.backup_dir
+        backup_dir_value = self.backup_dir or ""
         values = {
             "backup_dir": str(backup_dir_value),
             "project_dir": str(project_directory(self.config)),
@@ -169,9 +159,7 @@ class DeploymentRunner:
             self.cleanup()
             self.report()
             return 1
-        compose_command = preflight_result.get("compose_command")
-        if not compose_command:
-            compose_command = self.compose_command
+        compose_command = preflight_result.get("compose_command") or self.compose_command
         self.compose_command = compose_command
 
         if not self.run_hooks("backup_before_deploy"):
@@ -186,8 +174,7 @@ class DeploymentRunner:
             self.report()
             return 1
 
-        validate_result = self.validate(self.compose_command)
-        if not validate_result.get("ok"):
+        if not self.validate(self.compose_command).get("ok"):
             self.cleanup()
             self.report()
             return 1
@@ -197,15 +184,13 @@ class DeploymentRunner:
             self.report()
             return 1
 
-        deploy_result = self.deploy(self.compose_command)
-        if not deploy_result.get("ok"):
+        if not self.deploy(self.compose_command).get("ok"):
             self.rollback()
             self.cleanup()
             self.report()
             return 1
 
-        health_result = self.health_checks()
-        if not health_result.get("ok"):
+        if not self.health_checks().get("ok"):
             self.rollback()
             self.cleanup()
             self.report()

@@ -10,9 +10,8 @@ jobs:
   deploy:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-
     steps:
-      - name: Deploy to Ubuntu server
+      - name: Deploy
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -20,7 +19,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /opt/my-app
-            export IMAGE_TAG=${{ github.event.workflow_run.head_sha }}
+            IMAGE_TAG=${{ github.event.workflow_run.head_sha }}
             docker compose pull
             docker compose up -d --remove-orphans
             docker compose ps

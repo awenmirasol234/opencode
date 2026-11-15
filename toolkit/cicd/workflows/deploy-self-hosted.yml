@@ -1,10 +1,8 @@
-
 name: Deploy via Self-Hosted Runner
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -16,15 +14,12 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy to Ubuntu Server
     runs-on:
       - self-hosted
       - linux
       - x64
       - production
-
     steps:
-      - name: Deploy application
-        run: |
+      - run: |
           cd /opt/myapp
           ./deploy.py
