@@ -1,17 +1,23 @@
+from .command_strings import (
+    COMPOSE_DEPLOY_ARGS,
+    COMPOSE_PULL_ARGS,
+    COMPOSE_SERVICES_ARGS,
+    COMPOSE_VALIDATE_ARGS,
+)
 from .commands import compose_arguments, format_command
 from .config import project_directory
 
 
 def validate_compose(config, compose_command, command_runner, logger):
     logger.info("Validating the Docker Compose configuration.")
-    command = compose_arguments(config, compose_command, ["config"])
+    command = compose_arguments(config, compose_command, COMPOSE_VALIDATE_ARGS)
     result = command_runner(command, str(project_directory(config)), 120)
     if not result.ok():
         logger.fail("The Docker Compose configuration is not valid.")
         return {"ok": False, "error": "The Docker Compose configuration is not valid."}
     required_services = config.get("required_services", [])
     if required_services:
-        command = compose_arguments(config, compose_command, ["config", "--services"])
+        command = compose_arguments(config, compose_command, COMPOSE_SERVICES_ARGS)
         result = command_runner(command, str(project_directory(config)), 120)
         if not result.ok():
             logger.fail("The Docker Compose services could not be listed.")
@@ -26,7 +32,7 @@ def validate_compose(config, compose_command, command_runner, logger):
 
 
 def pull_images(config, compose_command, command_runner, logger):
-    pull_args = config.get("compose", {}).get("pull_args", ["pull"])
+    pull_args = config.get("compose", {}).get("pull_args", COMPOSE_PULL_ARGS)
     if not pull_args:
         return {"ok": True, "error": ""}
     command = compose_arguments(config, compose_command, pull_args)
@@ -43,7 +49,7 @@ def deploy_application(config, compose_command, command_runner, logger, identity
     pull_result = pull_images(config, compose_command, command_runner, logger)
     if not pull_result["ok"]:
         return pull_result
-    deploy_args = config.get("compose", {}).get("deploy_args", ["up", "-d"])
+    deploy_args = config.get("compose", {}).get("deploy_args", COMPOSE_DEPLOY_ARGS)
     values = {
         "commit_sha": "",
         "previous_commit_sha": "",

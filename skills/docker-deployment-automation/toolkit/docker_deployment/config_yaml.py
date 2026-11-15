@@ -1,3 +1,12 @@
+from .command_strings import (
+    COMPOSE_DEPLOY_ARGS,
+    COMPOSE_PULL_ARGS,
+    COMPOSE_ROLLBACK_ARGS,
+    COMPOSE_START_ARGS,
+    DEFAULT_COMPOSE_FILES,
+)
+
+
 def section(data, name):
     value = data.get(name, {})
     if not isinstance(value, dict):
@@ -24,7 +33,7 @@ def normalize_config(data):
 
     config["project_dir"] = data.get("project_dir", ".")
     config["env_file"] = data.get("env_file", ".env")
-    config["compose_files"] = data.get("compose_files", ["compose.yaml"])
+    config["compose_files"] = list(data.get("compose_files", DEFAULT_COMPOSE_FILES))
     config["required_env"] = data.get("required_env", [])
     config["required_images"] = data.get("required_images", [])
     config["required_services"] = data.get("required_services", [])
@@ -54,7 +63,7 @@ def normalize_config(data):
     database = section(services, "database")
     config["database"] = {
         "services": database.get("services", []),
-        "start_args": database.get("start_args", ["up", "-d"]),
+        "start_args": list(database.get("start_args", COMPOSE_START_ARGS)),
         "readiness_command": database.get("readiness_command", []),
         "readiness_timeout": database.get("readiness_timeout", 60),
         "readiness_interval": database.get("readiness_interval", 5),
@@ -75,9 +84,9 @@ def normalize_config(data):
 
     compose = section(data, "compose")
     config["compose"] = {
-        "pull_args": compose.get("pull_args", ["pull"]),
-        "deploy_args": compose.get("deploy_args", ["up", "-d"]),
-        "rollback_args": compose.get("rollback_args", ["up", "-d"]),
+        "pull_args": list(compose.get("pull_args", COMPOSE_PULL_ARGS)),
+        "deploy_args": list(compose.get("deploy_args", COMPOSE_DEPLOY_ARGS)),
+        "rollback_args": list(compose.get("rollback_args", COMPOSE_ROLLBACK_ARGS)),
     }
 
     config["hooks"] = section(data, "hooks")

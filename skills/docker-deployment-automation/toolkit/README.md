@@ -60,6 +60,32 @@ Commands are written as lists. For example:
 
 The commands are not run through a shell.
 
+### Command strings
+
+Every command the toolkit builds itself is a named constant in
+`docker_deployment/command_strings.py`. That file is the single place to read
+or change the command strings:
+
+```python
+DOCKER_COMPOSE_COMMAND = ["docker", "compose"]
+DOCKER_COMPOSE_VERSION_COMMAND = ["docker", "compose", "version"]
+DOCKER_INFO_COMMAND = ["docker", "info"]
+DOCKER_IMAGE_INSPECT_COMMAND = ["docker", "image", "inspect"]
+DOCKER_INSPECT_COMMAND = ["docker", "inspect"]
+COMPOSE_PS_ARGS = ["ps", "-q"]
+COMPOSE_VALIDATE_ARGS = ["config"]
+COMPOSE_SERVICES_ARGS = ["config", "--services"]
+COMPOSE_PULL_ARGS = ["pull"]
+COMPOSE_START_ARGS = ["up", "-d"]
+COMPOSE_DEPLOY_ARGS = ["up", "-d"]
+COMPOSE_ROLLBACK_ARGS = ["up", "-d"]
+DEFAULT_COMPOSE_FILES = ["compose.yaml"]
+```
+
+These are the built-in defaults. A project overrides them in its own
+configuration file with `compose_files`, `compose.pull_args`,
+`compose.deploy_args`, `compose.rollback_args`, and `database.start_args`.
+
 The fixed deployment order is implemented by `DeploymentRunner.run()`. Most
 projects only need the configuration file. The runner:
 

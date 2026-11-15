@@ -2,9 +2,12 @@ import time
 import urllib.error
 import urllib.request
 
+from .command_strings import (
+    COMPOSE_PS_ARGS,
+    CONTAINER_INSPECT_FORMAT,
+    DOCKER_INSPECT_COMMAND,
+)
 from .config import project_directory
-
-INSPECT_FORMAT = "{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}"
 
 
 def check_command_type(check, command_runner, config):
@@ -38,7 +41,7 @@ def check_url_type(check):
 
 def find_container_id(check, command_runner, config, compose_command):
     service = check.get("service")
-    command = list(compose_command) + ["ps", "-q", service]
+    command = list(compose_command) + COMPOSE_PS_ARGS + [service]
     result = command_runner(command, str(project_directory(config)), 30)
     if not result.ok():
         return ""
@@ -57,7 +60,7 @@ def check_container_type(check, command_runner, config, compose_command):
     container_id = find_container_id(check, command_runner, config, compose_command)
     if not container_id:
         return {"passed": False, "error": "The container was not found: {0}.".format(service), "terminal": True, "diagnostic": ""}
-    command = ["docker", "inspect", "--format", INSPECT_FORMAT, container_id]
+    command = DOCKER_INSPECT_COMMAND + ["--format", CONTAINER_INSPECT_FORMAT, container_id]
     result = command_runner(command, str(project_directory(config)), 30)
     if not result.ok():
         return {"passed": False, "error": "The container could not be inspected: {0}.".format(service), "terminal": True, "diagnostic": ""}

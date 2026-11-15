@@ -1,6 +1,14 @@
 import shutil
 import subprocess
 
+from .command_strings import (
+    DEFAULT_COMPOSE_FILES,
+    DOCKER_COMPOSE_COMMAND,
+    DOCKER_COMPOSE_LEGACY_COMMAND,
+    DOCKER_COMPOSE_LEGACY_VERSION_COMMAND,
+    DOCKER_COMPOSE_VERSION_COMMAND,
+)
+
 
 class CommandResult:
     def __init__(self, returncode, stdout, stderr):
@@ -43,13 +51,13 @@ def run_command(command, cwd, timeout):
 
 def find_compose_command(run_command, project_dir):
     if shutil.which("docker"):
-        result = run_command(["docker", "compose", "version"], project_dir, 30)
+        result = run_command(DOCKER_COMPOSE_VERSION_COMMAND, project_dir, 30)
         if result.ok():
-            return ["docker", "compose"]
+            return list(DOCKER_COMPOSE_COMMAND)
     if shutil.which("docker-compose"):
-        result = run_command(["docker-compose", "version"], project_dir, 30)
+        result = run_command(DOCKER_COMPOSE_LEGACY_VERSION_COMMAND, project_dir, 30)
         if result.ok():
-            return ["docker-compose"]
+            return list(DOCKER_COMPOSE_LEGACY_COMMAND)
     return None
 
 
@@ -65,7 +73,7 @@ def format_command(command, values):
 
 def compose_arguments(config, compose_command, arguments):
     command = list(compose_command)
-    for compose_file in config.get("compose_files", ["compose.yaml"]):
+    for compose_file in config.get("compose_files", DEFAULT_COMPOSE_FILES):
         command.extend(["-f", str(compose_file)])
     env_file = config.get("env_file")
     if env_file:

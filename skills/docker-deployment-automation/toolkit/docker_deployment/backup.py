@@ -3,6 +3,7 @@ import shutil
 import time
 from datetime import datetime
 
+from .command_strings import COMPOSE_START_ARGS
 from .commands import compose_arguments
 from .config import project_directory, project_path
 
@@ -64,7 +65,7 @@ def start_database_services(config, command_runner, errors):
     if not compose_command:
         errors.append("The Docker Compose command is missing.")
         return
-    arguments = list(database.get("start_args", ["up", "-d"]))
+    arguments = list(database.get("start_args", COMPOSE_START_ARGS))
     arguments.extend(services)
     command = compose_arguments(config, compose_command, arguments)
     result = command_runner(command, str(project_directory(config)), 600)

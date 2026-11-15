@@ -1,5 +1,10 @@
 import os
 
+from .command_strings import (
+    DEFAULT_COMPOSE_FILES,
+    DOCKER_IMAGE_INSPECT_COMMAND,
+    DOCKER_INFO_COMMAND,
+)
 from .config import environment_values, project_directory
 
 
@@ -13,7 +18,7 @@ def check_project_directory(config, logger):
 
 def check_compose_files(config, logger):
     project_dir = project_directory(config)
-    for compose_file in config.get("compose_files", ["compose.yaml"]):
+    for compose_file in config.get("compose_files", DEFAULT_COMPOSE_FILES):
         path = project_dir / compose_file
         if not path.is_file():
             logger.fail("The Compose file was not found: {0}.".format(compose_file))
@@ -80,7 +85,7 @@ def check_docker_available(config, logger):
 
 
 def check_docker_engine(config, command_runner, logger):
-    result = command_runner(["docker", "info"], str(project_directory(config)), 60)
+    result = command_runner(DOCKER_INFO_COMMAND, str(project_directory(config)), 60)
     if result.ok():
         logger.info("The Docker Engine is available.")
         return ""
@@ -94,7 +99,7 @@ def check_required_images(config, command_runner, logger):
             logger.fail("A required Docker image name is not valid.")
             return "A required Docker image name is not valid."
         result = command_runner(
-            ["docker", "image", "inspect", image], str(project_directory(config)), 60
+            DOCKER_IMAGE_INSPECT_COMMAND + [image], str(project_directory(config)), 60
         )
         if not result.ok():
             logger.fail("The required Docker image is not available: {0}.".format(image))
