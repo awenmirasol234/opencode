@@ -113,31 +113,26 @@ Send an unexpected exception to rollback when deployment may have started. Other
 
 Write complete, natural-language sentences. Explain each action or result. Avoid unexplained shorthand.
 
-Use this format:
+A message is shown in one of two ways, never both at once.
+
+A message that announces a step that is now running shows a loading spinner
+with the message. The spinner animates in place while the step runs and is
+erased when the step reports its result.
+
+A message that reports a completed result shows the log level and the message,
+and stays on the screen.
 
 ```text
-[INFO] Starting the Docker deployment.
-
-[INFO] Running preflight checks.
-[ OK ] Docker is running.
-[ OK ] Docker Compose is available.
-[ OK ] The environment file was found.
-[PASS] Preflight checks completed successfully.
-
-[INFO] Creating backups.
-[ OK ] The database backup was saved.
-[ OK ] The configuration files were backed up.
-[PASS] Backups were created at backups/backup_20261011_092119.
-
-[INFO] Deploying the application.
-[INFO] Pulling the database image.
+⠋ Running the preflight checks.
+[OK] The project directory was found.
+[OK] The Compose files were found.
+[FAIL] The Docker Engine is not available.
 ```
 
 Use message levels consistently:
 
-- Use `[INFO]` for stages and progress messages.
-- Use `[ OK ]` for an individual successful check or action.
-- Use `[PASS]` for a completed stage.
+- Use a loading spinner for a step that is now running.
+- Use `[OK]` for a successful check, action, or stage.
 - Use `[WARN]` for a non-fatal warning.
 - Use `[FAIL]` for a failed check, action, or stage.
 - Write every message as a clear sentence.
@@ -146,13 +141,25 @@ Use message levels consistently:
 Apply terminal colors safely:
 
 - Use ANSI colors only for interactive terminal output.
-- Use cyan or blue for `[INFO]` and stage headings.
-- Use green for `[ OK ]` and `[PASS]`.
+- Keep the loading spinner plain.
+- Use green for `[OK]`.
 - Use yellow for `[WARN]`.
 - Use red for `[FAIL]`.
 - Keep file logs uncolored and timestamped.
-- Disable colors when output is not a TTY or when `NO_COLOR` is set.
+- Disable colors when output is not a TTY.
 - Keep colors and formatting out of exit codes and file log content.
+
+Write only the finished lines to the log file. The loading lines exist only on
+the terminal while their step runs.
+
+```text
+2026-11-15T17:56:24 [OK] The project directory was found.
+2026-11-15T17:56:26 [FAIL] The Docker Engine is not available.
+```
+
+Use Braille spinner frames when the console can show them. Fall back to plain
+ASCII frames when the stream cannot encode them, such as a legacy Windows code
+page or a redirected pipe.
 
 ### 2. Acquire the deployment lock
 

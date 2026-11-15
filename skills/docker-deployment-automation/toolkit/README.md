@@ -8,6 +8,9 @@ database, health-check, migration, or rollback commands.
 The code uses beginner-friendly Python: simple functions, clear `if` statements,
 lists, and dictionaries. Each deployment step is kept in its own small file.
 
+For a plain-language explanation of how the deployment flow works, read
+`../HOW-IT-WORKS.md`.
+
 ## Install in another project
 
 Keep a local copy of this `toolkit` folder. From the target project's folder,
