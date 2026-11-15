@@ -125,6 +125,7 @@ def run_database_backup(config, command_runner, backup_dir, errors):
 
 
 def create_backups(config, command_runner, logger):
+    logger.info("Creating the backup.")
     errors = []
     backup_dir = create_backup_directory(config)
     copy_backup_paths(config, backup_dir, errors)

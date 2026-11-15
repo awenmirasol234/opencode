@@ -60,6 +60,35 @@ Commands are written as lists. For example:
 
 The commands are not run through a shell.
 
+### Log output
+
+Each message is shown in one of two ways, never both at once.
+
+A message that announces a step that is **now running** shows a loading
+spinner. The spinner animates in place while the step runs and is erased when
+the step reports its result.
+
+A message that reports a **completed result** shows the log level and stays on
+the screen.
+
+```text
+⠋ Running the preflight checks.
+[OK] The project directory was found.
+[OK] The Compose files were found.
+[FAIL] The Docker Engine is not available.
+```
+
+The log file records the finished lines only, with a timestamp:
+
+```text
+2026-11-15T17:56:24 [OK] The project directory was found.
+2026-11-15T17:56:26 [FAIL] The Docker Engine is not available.
+```
+
+The spinner frames live in `docker_deployment/logger.py` as `SPINNER_FRAMES`.
+A console that cannot show them, such as a legacy Windows code page or a
+redirected pipe, falls back to `ASCII_SPINNER_FRAMES`.
+
 ### Command strings
 
 Every command the toolkit builds itself is a named constant in

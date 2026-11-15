@@ -10,7 +10,7 @@ from .config import environment_values, project_directory
 
 def check_project_directory(config, logger):
     if project_directory(config).is_dir():
-        logger.info("The project directory was found.")
+        logger.ok("The project directory was found.")
         return ""
     logger.fail("The project directory was not found.")
     return "The project directory was not found."
@@ -23,7 +23,7 @@ def check_compose_files(config, logger):
         if not path.is_file():
             logger.fail("The Compose file was not found: {0}.".format(compose_file))
             return "The Compose file was not found: {0}.".format(compose_file)
-    logger.info("The Compose files were found.")
+    logger.ok("The Compose files were found.")
     return ""
 
 
@@ -35,7 +35,7 @@ def check_env_file(config, logger):
     if not path.is_file():
         logger.fail("The environment file was not found: {0}.".format(env_file))
         return "The environment file was not found: {0}.".format(env_file)
-    logger.info("The environment file was found.")
+    logger.ok("The environment file was found.")
     return ""
 
 
@@ -45,7 +45,7 @@ def check_required_env(config, logger):
         if not values.get(name):
             logger.fail("The required environment value is missing: {0}.".format(name))
             return "The required environment value is missing: {0}.".format(name)
-    logger.info("The required environment values are available.")
+    logger.ok("The required environment values are available.")
     return ""
 
 
@@ -57,7 +57,7 @@ def check_project_permissions(config, logger):
     if not os.access(str(project_dir), os.W_OK):
         logger.fail("The project directory is not writable.")
         return "The project directory is not writable."
-    logger.info("The project directory is readable and writable.")
+    logger.ok("The project directory is readable and writable.")
     return ""
 
 
@@ -72,13 +72,13 @@ def check_deployment_identity(config, logger):
     if deployment.get("require_previous_sha") and not identity.get("previous_commit_sha"):
         logger.fail("The previous deployment commit SHA is not available.")
         return "The previous deployment commit SHA is not available."
-    logger.info("The deployment commit SHA is valid.")
+    logger.ok("The deployment commit SHA is valid.")
     return ""
 
 
 def check_docker_available(config, logger):
     if config.get("compose_command"):
-        logger.info("Docker Compose is available.")
+        logger.ok("Docker Compose is available.")
         return ""
     logger.fail("Docker Compose is not available.")
     return "Docker Compose is not available."
@@ -87,7 +87,7 @@ def check_docker_available(config, logger):
 def check_docker_engine(config, command_runner, logger):
     result = command_runner(DOCKER_INFO_COMMAND, str(project_directory(config)), 60)
     if result.ok():
-        logger.info("The Docker Engine is available.")
+        logger.ok("The Docker Engine is available.")
         return ""
     logger.fail("The Docker Engine is not available.")
     return "The Docker Engine is not available."
@@ -104,7 +104,7 @@ def check_required_images(config, command_runner, logger):
         if not result.ok():
             logger.fail("The required Docker image is not available: {0}.".format(image))
             return "The required Docker image is not available: {0}.".format(image)
-    logger.info("The required Docker images are available.")
+    logger.ok("The required Docker images are available.")
     return ""
 
 

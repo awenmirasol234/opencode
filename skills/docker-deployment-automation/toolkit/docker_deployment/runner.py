@@ -31,6 +31,7 @@ class DeploymentRunner:
         self.backup_dir = ""
         self.lock_result = {"ok": True, "error": ""}
         self.lock_acquired = False
+        self.exit_code = 1
 
     def log_path(self):
         log_dir = project_path(self.config, self.config.get("log_dir", "logs"))
@@ -77,7 +78,7 @@ class DeploymentRunner:
 
     def backup(self):
         if not self.config.get("backup_enabled", True):
-            self.logger.info("The backup stage was disabled.")
+            self.logger.ok("The backup stage was skipped.")
             return {"ok": True, "errors": [], "backup_dir": ""}
         return create_backups(self.config, self.command_runner, self.logger)
 
@@ -101,12 +102,15 @@ class DeploymentRunner:
             release_lock(self.config)
             self.lock_acquired = False
         if not self.config.get("cleanup_enabled", True):
-            self.logger.info("The cleanup stage was disabled.")
+            self.logger.ok("The cleanup stage was skipped.")
             return {"ok": True, "errors": []}
         return clean(self.config, self.logger)
 
     def report(self):
-        self.logger.info("The deployment finished.")
+        if self.exit_code == 0:
+            self.logger.ok("The deployment finished successfully.")
+        else:
+            self.logger.warn("The deployment finished with errors.")
 
     def rollback(self):
         if not self.config.get("rollback_enabled", True):
@@ -206,6 +210,7 @@ class DeploymentRunner:
             return 1
 
         save_deployment_identity(self.identity)
+        self.exit_code = 0
         self.cleanup()
         self.report()
         return 0

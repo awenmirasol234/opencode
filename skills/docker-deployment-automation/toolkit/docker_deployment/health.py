@@ -103,6 +103,7 @@ def run_health_checks(config, command_runner, logger, compose_command=None):
     diagnostics = []
     errors = []
     while True:
+        logger.info("Waiting for the health checks.")
         failed_checks = []
         for check in checks:
             if not isinstance(check, dict):
@@ -110,7 +111,7 @@ def run_health_checks(config, command_runner, logger, compose_command=None):
             result = run_single_check(check, command_runner, config, compose_command)
             name = check.get("name", "health check")
             if result["passed"]:
-                logger.info("{0} passed.".format(name))
+                logger.ok("{0} passed.".format(name))
                 continue
             error = "{0} failed: {1}".format(name, result["error"])
             if not check.get("required", True):
