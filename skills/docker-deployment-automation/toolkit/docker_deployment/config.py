@@ -1,12 +1,95 @@
+import copy
 import os
 import re
 from pathlib import Path
 
 COMMIT_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 
+DOCKER_COMPOSE_COMMAND = ["docker", "compose"]
+DOCKER_COMPOSE_LEGACY_COMMAND = ["docker-compose"]
+DOCKER_COMPOSE_VERSION_COMMAND = ["docker", "compose", "version"]
+DOCKER_COMPOSE_LEGACY_VERSION_COMMAND = ["docker-compose", "version"]
+DOCKER_INFO_COMMAND = ["docker", "info"]
+DOCKER_IMAGE_INSPECT_COMMAND = ["docker", "image", "inspect"]
+DOCKER_INSPECT_COMMAND = ["docker", "inspect"]
+CONTAINER_INSPECT_FORMAT = "{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}"
+
+COMPOSE_PS_ARGS = ["ps", "-q"]
+COMPOSE_VALIDATE_ARGS = ["config"]
+COMPOSE_SERVICES_ARGS = ["config", "--services"]
+COMPOSE_PULL_ARGS = ["pull"]
+COMPOSE_START_ARGS = ["up", "-d"]
+COMPOSE_DEPLOY_ARGS = ["up", "-d"]
+COMPOSE_ROLLBACK_ARGS = ["up", "-d"]
+
+DEFAULT_CONFIG = {
+    "project_dir": ".",
+    "env_file": ".env",
+    "compose_files": ["compose.yaml"],
+    "required_env": [],
+    "required_images": [],
+    "required_services": [],
+    "deployment": {
+        "commit_sha_env": "GIT_COMMIT_SHA",
+        "state_file": ".deployment/current-sha",
+        "require_previous_sha": False,
+    },
+    "lock_file": ".deployment/deployment.lock",
+    "deployment_lock": True,
+    "backup_dir": "backups",
+    "backup_paths": [],
+    "backup_enabled": True,
+    "log_dir": "logs",
+    "protected_paths": [],
+    "temporary_paths": [],
+    "cleanup_enabled": True,
+    "rollback_enabled": True,
+    "database": {
+        "services": [],
+        "start_args": ["up", "-d"],
+        "readiness_command": [],
+        "readiness_timeout": 60,
+        "readiness_interval": 5,
+        "readiness_retries": 30,
+        "backup_command": [],
+        "backup_file": "database.sql",
+    },
+    "health": {
+        "timeout": 120,
+        "interval": 5,
+    },
+    "health_checks": [],
+    "compose": {
+        "pull_args": ["pull"],
+        "deploy_args": ["up", "-d"],
+        "rollback_args": ["up", "-d"],
+    },
+    "rollback": {
+        "command": [],
+    },
+    "hooks": {},
+}
+
+
+def setting(config, name):
+    value = config.get(name)
+    if value is None:
+        value = DEFAULT_CONFIG.get(name)
+    if isinstance(value, list):
+        return list(value)
+    return value
+
+
+def section(config, name):
+    values = copy.deepcopy(DEFAULT_CONFIG.get(name, {}))
+    user_values = config.get(name, {})
+    if isinstance(user_values, dict):
+        values.update(user_values)
+    return values
+
 
 def project_directory(config):
-    value = config.get("project_dir", ".")
+    value = setting(config, "project_dir")
     return Path(value).expanduser().resolve()
 
 
@@ -35,10 +118,10 @@ def read_environment_file(path):
 
 def environment_values(config):
     values = {}
-    env_file = config.get("env_file")
+    env_file = setting(config, "env_file")
     if env_file:
         values.update(read_environment_file(project_path(config, env_file)))
-    for name in config.get("required_env", []):
+    for name in setting(config, "required_env"):
         if name in os.environ:
             values[name] = os.environ[name]
     return values

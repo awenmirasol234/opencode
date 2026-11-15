@@ -10,6 +10,8 @@ from .config import (
     project_path,
     read_previous_commit_sha,
     save_deployment_identity,
+    section,
+    setting,
 )
 from .deployment import deploy_application, validate_compose
 from .health import run_health_checks
@@ -34,7 +36,7 @@ class DeploymentRunner:
         self.exit_code = 1
 
     def log_path(self):
-        log_dir = project_path(self.config, self.config.get("log_dir", "logs"))
+        log_dir = project_path(self.config, setting(self.config, "log_dir"))
         name = datetime.now().strftime("deployment_%Y%m%d_%H%M%S.log")
         path = log_dir / name
         counter = 1
@@ -46,11 +48,11 @@ class DeploymentRunner:
     def initialize(self):
         env_values = environment_values(self.config)
         self.config["env_values"] = env_values
-        deployment = self.config.get("deployment", {})
-        commit_sha_env = deployment.get("commit_sha_env", "GIT_COMMIT_SHA")
+        deployment = section(self.config, "deployment")
+        commit_sha_env = deployment.get("commit_sha_env")
         commit_sha = env_values.get(commit_sha_env, "")
         state_path = project_path(
-            self.config, deployment.get("state_file", ".deployment/current-sha")
+            self.config, deployment.get("state_file")
         )
         self.identity = {
             "ok": is_valid_sha(commit_sha),
@@ -77,7 +79,7 @@ class DeploymentRunner:
         return run_preflight(self.config, self.command_runner, self.logger)
 
     def backup(self):
-        if not self.config.get("backup_enabled", True):
+        if not setting(self.config, "backup_enabled"):
             self.logger.ok("The backup stage was skipped.")
             return {"ok": True, "errors": [], "backup_dir": ""}
         return create_backups(self.config, self.command_runner, self.logger)
@@ -101,7 +103,7 @@ class DeploymentRunner:
         if self.lock_acquired:
             release_lock(self.config)
             self.lock_acquired = False
-        if not self.config.get("cleanup_enabled", True):
+        if not setting(self.config, "cleanup_enabled"):
             self.logger.ok("The cleanup stage was skipped.")
             return {"ok": True, "errors": []}
         return clean(self.config, self.logger)
@@ -113,7 +115,7 @@ class DeploymentRunner:
             self.logger.warn("The deployment finished with errors.")
 
     def rollback(self):
-        if not self.config.get("rollback_enabled", True):
+        if not setting(self.config, "rollback_enabled"):
             self.logger.warn("The rollback stage was disabled.")
             return {"ok": True, "error": ""}
         self.run_hooks("restore_on_failure")
@@ -131,7 +133,7 @@ class DeploymentRunner:
         return result
 
     def run_hooks(self, hook_name):
-        command = self.config.get("hooks", {}).get(hook_name)
+        command = section(self.config, "hooks").get(hook_name)
         if not command:
             return True
         if not self.backup_dir:

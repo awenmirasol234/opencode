@@ -1,11 +1,11 @@
-from .command_strings import (
-    COMPOSE_DEPLOY_ARGS,
-    COMPOSE_PULL_ARGS,
+from .commands import compose_arguments, format_command
+from .config import (
     COMPOSE_SERVICES_ARGS,
     COMPOSE_VALIDATE_ARGS,
+    project_directory,
+    section,
+    setting,
 )
-from .commands import compose_arguments, format_command
-from .config import project_directory
 
 
 def validate_compose(config, compose_command, command_runner, logger):
@@ -15,7 +15,7 @@ def validate_compose(config, compose_command, command_runner, logger):
     if not result.ok():
         logger.fail("The Docker Compose configuration is not valid.")
         return {"ok": False, "error": "The Docker Compose configuration is not valid."}
-    required_services = config.get("required_services", [])
+    required_services = setting(config, "required_services")
     if required_services:
         command = compose_arguments(config, compose_command, COMPOSE_SERVICES_ARGS)
         result = command_runner(command, str(project_directory(config)), 120)
@@ -32,7 +32,7 @@ def validate_compose(config, compose_command, command_runner, logger):
 
 
 def pull_images(config, compose_command, command_runner, logger):
-    pull_args = config.get("compose", {}).get("pull_args", COMPOSE_PULL_ARGS)
+    pull_args = section(config, "compose").get("pull_args")
     if not pull_args:
         return {"ok": True, "error": ""}
     command = compose_arguments(config, compose_command, pull_args)
@@ -49,7 +49,7 @@ def deploy_application(config, compose_command, command_runner, logger, identity
     pull_result = pull_images(config, compose_command, command_runner, logger)
     if not pull_result["ok"]:
         return pull_result
-    deploy_args = config.get("compose", {}).get("deploy_args", COMPOSE_DEPLOY_ARGS)
+    deploy_args = section(config, "compose").get("deploy_args")
     values = {
         "commit_sha": "",
         "previous_commit_sha": "",

@@ -4,13 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "docker-deployment-toolkit"
-version = "0.2.0"
+version = "0.3.0"
 description = "A small, safe Docker Compose deployment runner."
 readme = "README.md"
 requires-python = ">=3.8"
-dependencies = [
-    "pyyaml>=6.0",
-]
+dependencies = []
 
 [project.scripts]
 docker-deploy = "docker_deployment.__main__:main"

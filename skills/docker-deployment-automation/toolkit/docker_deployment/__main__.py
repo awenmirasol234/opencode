@@ -21,20 +21,15 @@ def load_python_config(path_str):
 
 
 def load_config(path_str):
-    path = str(path_str)
-    if path.endswith(".yaml") or path.endswith(".yml"):
-        from .config_yaml import load_yaml_config
-
-        return load_yaml_config(path)
-    return load_python_config(path)
+    return load_python_config(path_str)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Run a safe Docker Compose deployment.")
     parser.add_argument(
         "--config",
-        default="deploy_config.yaml",
-        help="Path to a Python or YAML configuration file.",
+        default="deploy_config.py",
+        help="Path to a Python configuration file.",
     )
     arguments = parser.parse_args()
     try:

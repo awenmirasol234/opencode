@@ -2,11 +2,11 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from .config import project_directory, project_path
+from .config import project_directory, project_path, setting
 
 
 def lock_file_path(config):
-    value = config.get("lock_file", ".deployment/deployment.lock")
+    value = setting(config, "lock_file")
     return project_path(config, value)
 
 
@@ -19,7 +19,7 @@ def is_inside_project(path, config):
 
 
 def acquire_lock(config):
-    if not config.get("deployment_lock", True):
+    if not setting(config, "deployment_lock"):
         return {"ok": True, "error": "", "skipped": True}
     path = lock_file_path(config)
     if not is_inside_project(path, config):

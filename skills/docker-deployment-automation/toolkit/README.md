@@ -2,9 +2,8 @@
 
 This is a small Python toolkit for safe Docker Compose deployments.
 
-Each project provides one configuration file. The file can be a plain Python
-dictionary or a YAML file. The toolkit does not guess database, health-check,
-migration, or rollback commands.
+Each project provides one Python configuration file. The toolkit does not guess
+database, health-check, migration, or rollback commands.
 
 The code uses beginner-friendly Python: simple functions, clear `if` statements,
 lists, and dictionaries. Each deployment step is kept in its own small file.
@@ -31,14 +30,13 @@ toolkit files will then be used immediately:
 python -m pip install -e ./path/to/toolkit
 ```
 
-Python files need only the standard library. YAML configuration files need
-PyYAML, which the installer adds automatically.
+The toolkit uses only the Python standard library.
 
 ## Use
 
-Copy `examples/deploy_config.py` or `examples/deploy_config.yaml` from the
-local toolkit folder to the target project. Replace the example health and
-rollback commands with commands for that project.
+Copy `examples/deploy_config.py` from the local toolkit folder to the target
+project. Replace the example health and rollback commands with commands for
+that project.
 
 Run the command from the target project folder:
 
@@ -49,7 +47,7 @@ docker-deploy --config deploy_config.py
 You can also run the module directly:
 
 ```text
-python -m docker_deployment --config deploy_config.yaml
+python -m docker_deployment --config deploy_config.py
 ```
 
 Commands are written as lists. For example:
@@ -89,11 +87,13 @@ The spinner frames live in `docker_deployment/logger.py` as `SPINNER_FRAMES`.
 A console that cannot show them, such as a legacy Windows code page or a
 redirected pipe, falls back to `ASCII_SPINNER_FRAMES`.
 
-### Command strings
+### Configuration and command strings
 
-Every command the toolkit builds itself is a named constant in
-`docker_deployment/command_strings.py`. That file is the single place to read
-or change the command strings:
+`docker_deployment/config.py` is the single place that holds everything the
+toolkit reads: the command strings it builds, the default value of every
+setting, and the helpers that read them.
+
+Every command the toolkit builds itself is a named constant:
 
 ```python
 DOCKER_COMPOSE_COMMAND = ["docker", "compose"]
@@ -108,7 +108,30 @@ COMPOSE_PULL_ARGS = ["pull"]
 COMPOSE_START_ARGS = ["up", "-d"]
 COMPOSE_DEPLOY_ARGS = ["up", "-d"]
 COMPOSE_ROLLBACK_ARGS = ["up", "-d"]
-DEFAULT_COMPOSE_FILES = ["compose.yaml"]
+```
+
+Every setting has a default in `DEFAULT_CONFIG`:
+
+```python
+DEFAULT_CONFIG = {
+    "project_dir": ".",
+    "env_file": ".env",
+    "compose_files": ["compose.yaml"],
+    "deployment": {
+        "commit_sha_env": "GIT_COMMIT_SHA",
+        "state_file": ".deployment/current-sha",
+        "require_previous_sha": False,
+    },
+    ...
+}
+```
+
+The modules read them with two helpers, so a module that is called with only
+part of a configuration still works:
+
+```python
+setting(config, "backup_dir")            # one value, or its default
+section(config, "compose").get("pull_args")  # one block, merged over its defaults
 ```
 
 These are the built-in defaults. A project overrides them in its own
@@ -162,68 +185,6 @@ The lock defaults to `.deployment/deployment.lock`. It is created atomically
 and must stay inside the project. The runner does not remove a lock file that
 it did not create; verify that no deployment is active before removing a stale
 lock manually.
-
-### YAML configuration
-
-A YAML file uses the same values in named sections. Copy
-`examples/deploy_config.yaml` and edit it:
-
-```yaml
-project_dir: "."
-compose_files:
-  - compose.yaml
-env_file: .env
-required_env:
-  - APP_ENV
-deployment:
-  commit_sha_env: GIT_COMMIT_SHA
-  state_file: .deployment/current-sha
-  require_previous_sha: false
-locks:
-  enabled: true
-  file: .deployment/deployment.lock
-backup:
-  enabled: true
-  dir: backups
-  paths:
-    - compose.yaml
-directories:
-  log_dir: logs
-  temp_paths:
-    - .deployment-tmp
-  protected_paths:
-    - data
-services:
-  database:
-    services: []
-    readiness_command: []
-    readiness_timeout: 120
-    readiness_interval: 5
-    readiness_retries: 30
-    backup_command: []
-    backup_file: database.backup
-health:
-  timeout: 120
-  interval: 5
-  checks: []
-compose:
-  pull_args:
-    - pull
-  deploy_args:
-    - up
-    - -d
-  rollback_args:
-    - up
-    - -d
-rollback:
-  command:
-    - python
-    - scripts/rollback.py
-    - "{backup_dir}"
-hooks: {}
-cleanup:
-  enabled: true
-```
 
 ### Preflight checks
 

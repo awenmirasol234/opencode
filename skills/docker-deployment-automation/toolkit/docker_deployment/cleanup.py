@@ -1,7 +1,7 @@
 import shutil
 from pathlib import Path
 
-from .config import project_directory, project_path
+from .config import project_directory, project_path, setting
 
 
 def is_inside(path, parent):
@@ -14,11 +14,11 @@ def is_inside(path, parent):
 
 def protected_paths(config):
     paths = [
-        project_path(config, config.get("backup_dir", "backups")),
-        project_path(config, config.get("log_dir", "logs")),
+        project_path(config, setting(config, "backup_dir")),
+        project_path(config, setting(config, "log_dir")),
         project_directory(config) / ".deployment",
     ]
-    for value in config.get("protected_paths", []):
+    for value in setting(config, "protected_paths"):
         paths.append(project_path(config, value))
     return paths
 
@@ -43,7 +43,7 @@ def clean(config, logger):
     project_dir = project_directory(config)
     protected = protected_paths(config)
     errors = []
-    for value in config.get("temporary_paths", []):
+    for value in setting(config, "temporary_paths"):
         path = project_dir / value
         if not is_inside(path, project_dir):
             errors.append("The cleanup path is outside the project: {0}.".format(value))

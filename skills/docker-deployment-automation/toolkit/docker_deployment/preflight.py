@@ -1,11 +1,13 @@
 import os
 
-from .command_strings import (
-    DEFAULT_COMPOSE_FILES,
+from .config import (
     DOCKER_IMAGE_INSPECT_COMMAND,
     DOCKER_INFO_COMMAND,
+    environment_values,
+    project_directory,
+    section,
+    setting,
 )
-from .config import environment_values, project_directory
 
 
 def check_project_directory(config, logger):
@@ -18,7 +20,7 @@ def check_project_directory(config, logger):
 
 def check_compose_files(config, logger):
     project_dir = project_directory(config)
-    for compose_file in config.get("compose_files", DEFAULT_COMPOSE_FILES):
+    for compose_file in setting(config, "compose_files"):
         path = project_dir / compose_file
         if not path.is_file():
             logger.fail("The Compose file was not found: {0}.".format(compose_file))
@@ -28,7 +30,7 @@ def check_compose_files(config, logger):
 
 
 def check_env_file(config, logger):
-    env_file = config.get("env_file")
+    env_file = setting(config, "env_file")
     if not env_file:
         return ""
     path = project_directory(config) / env_file
@@ -41,7 +43,7 @@ def check_env_file(config, logger):
 
 def check_required_env(config, logger):
     values = environment_values(config)
-    for name in config.get("required_env", []):
+    for name in setting(config, "required_env"):
         if not values.get(name):
             logger.fail("The required environment value is missing: {0}.".format(name))
             return "The required environment value is missing: {0}.".format(name)
@@ -68,7 +70,7 @@ def check_deployment_identity(config, logger):
     if not identity.get("ok"):
         logger.fail("The deployment commit SHA is not valid.")
         return "The deployment commit SHA is not valid."
-    deployment = config.get("deployment", {})
+    deployment = section(config, "deployment")
     if deployment.get("require_previous_sha") and not identity.get("previous_commit_sha"):
         logger.fail("The previous deployment commit SHA is not available.")
         return "The previous deployment commit SHA is not available."
@@ -94,7 +96,7 @@ def check_docker_engine(config, command_runner, logger):
 
 
 def check_required_images(config, command_runner, logger):
-    for image in config.get("required_images", []):
+    for image in setting(config, "required_images"):
         if not isinstance(image, str) or not image.strip():
             logger.fail("A required Docker image name is not valid.")
             return "A required Docker image name is not valid."

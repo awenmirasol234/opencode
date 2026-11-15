@@ -2,12 +2,14 @@ import time
 import urllib.error
 import urllib.request
 
-from .command_strings import (
+from .config import (
     COMPOSE_PS_ARGS,
     CONTAINER_INSPECT_FORMAT,
     DOCKER_INSPECT_COMMAND,
+    project_directory,
+    section,
+    setting,
 )
-from .config import project_directory
 
 
 def check_command_type(check, command_runner, config):
@@ -95,10 +97,10 @@ def run_single_check(check, command_runner, config, compose_command):
 
 
 def run_health_checks(config, command_runner, logger, compose_command=None):
-    checks = config.get("health_checks", [])
-    health_config = config.get("health", {})
-    timeout = health_config.get("timeout", 120)
-    interval = health_config.get("interval", 5)
+    checks = setting(config, "health_checks")
+    health_config = section(config, "health")
+    timeout = health_config.get("timeout")
+    interval = health_config.get("interval")
     deadline = time.monotonic() + timeout
     diagnostics = []
     errors = []

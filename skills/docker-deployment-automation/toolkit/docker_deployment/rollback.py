@@ -1,11 +1,11 @@
 from .commands import format_command
-from .config import project_directory
+from .config import project_directory, section
 
 
 def rollback_command_for(config):
-    command = config.get("rollback", {}).get("command")
+    command = section(config, "rollback").get("command")
     if not command:
-        command = config.get("compose", {}).get("rollback_args")
+        command = section(config, "compose").get("rollback_args")
     return command
 
 

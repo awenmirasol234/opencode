@@ -3,13 +3,12 @@ import shutil
 import time
 from datetime import datetime
 
-from .command_strings import COMPOSE_START_ARGS
 from .commands import compose_arguments
-from .config import project_directory, project_path
+from .config import project_directory, project_path, section, setting
 
 
 def create_backup_directory(config):
-    root = project_path(config, config.get("backup_dir", "backups"))
+    root = project_path(config, setting(config, "backup_dir"))
     root.mkdir(parents=True, exist_ok=True)
     name = datetime.now().strftime("backup_%Y%m%d_%H%M%S")
     folder = root / name
@@ -41,7 +40,7 @@ def verify_copy(source, target):
 
 def copy_backup_paths(config, backup_dir, errors):
     project_dir = project_directory(config)
-    for value in config.get("backup_paths", []):
+    for value in setting(config, "backup_paths"):
         source = project_dir / value
         if not source.exists():
             errors.append("The backup path was not found: {0}.".format(value))
@@ -57,15 +56,15 @@ def copy_backup_paths(config, backup_dir, errors):
 
 
 def start_database_services(config, command_runner, errors):
-    database = config.get("database", {})
-    services = database.get("services", [])
+    database = section(config, "database")
+    services = database.get("services")
     if not services:
         return
     compose_command = config.get("compose_command")
     if not compose_command:
         errors.append("The Docker Compose command is missing.")
         return
-    arguments = list(database.get("start_args", COMPOSE_START_ARGS))
+    arguments = list(database.get("start_args"))
     arguments.extend(services)
     command = compose_arguments(config, compose_command, arguments)
     result = command_runner(command, str(project_directory(config)), 600)
@@ -74,13 +73,13 @@ def start_database_services(config, command_runner, errors):
 
 
 def wait_for_database_ready(config, command_runner, errors):
-    database = config.get("database", {})
+    database = section(config, "database")
     readiness_command = database.get("readiness_command")
     if not readiness_command:
         return
-    timeout = database.get("readiness_timeout", 60)
-    interval = database.get("readiness_interval", 5)
-    retries = database.get("readiness_retries", 30)
+    timeout = database.get("readiness_timeout")
+    interval = database.get("readiness_interval")
+    retries = database.get("readiness_retries")
     deadline = time.monotonic() + timeout
     attempts = 0
     while True:
@@ -97,11 +96,11 @@ def wait_for_database_ready(config, command_runner, errors):
 
 
 def run_database_backup(config, command_runner, backup_dir, errors):
-    database = config.get("database", {})
+    database = section(config, "database")
     backup_command = database.get("backup_command")
     if not backup_command:
         return
-    backup_file = backup_dir / database.get("backup_file", "database.sql")
+    backup_file = backup_dir / database.get("backup_file")
     values = {
         "backup_dir": str(backup_dir),
         "backup_file": str(backup_file),

@@ -1,12 +1,12 @@
 import shutil
 import subprocess
 
-from .command_strings import (
-    DEFAULT_COMPOSE_FILES,
+from .config import (
     DOCKER_COMPOSE_COMMAND,
     DOCKER_COMPOSE_LEGACY_COMMAND,
     DOCKER_COMPOSE_LEGACY_VERSION_COMMAND,
     DOCKER_COMPOSE_VERSION_COMMAND,
+    setting,
 )
 
 
@@ -73,9 +73,9 @@ def format_command(command, values):
 
 def compose_arguments(config, compose_command, arguments):
     command = list(compose_command)
-    for compose_file in config.get("compose_files", DEFAULT_COMPOSE_FILES):
+    for compose_file in setting(config, "compose_files"):
         command.extend(["-f", str(compose_file)])
-    env_file = config.get("env_file")
+    env_file = setting(config, "env_file")
     if env_file:
         command.extend(["--env-file", str(env_file)])
     command.extend(arguments)
