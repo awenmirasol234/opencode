@@ -1,19 +1,17 @@
 import argparse
 import importlib.util
-from pathlib import Path
+import pathlib
 
 from .runner import run
 
 
-def load_config(path):
-    config_path = Path(path).resolve()
-    spec = importlib.util.spec_from_file_location("deployment_config", str(config_path))
+def load_python_config(path_str):
+    path = pathlib.Path(path_str).resolve()
+    spec = importlib.util.spec_from_file_location("deployment_config", str(path))
     if spec is None or spec.loader is None:
         raise ValueError("The configuration file could not be loaded.")
-
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    # Allow projects to use a fixed dictionary or build it with a function.
     config = getattr(module, "CONFIG", None)
     if config is None and hasattr(module, "get_config"):
         config = module.get_config()
@@ -22,21 +20,28 @@ def load_config(path):
     return config
 
 
+def load_config(path_str):
+    path = str(path_str)
+    if path.endswith(".yaml") or path.endswith(".yml"):
+        from .config_yaml import load_yaml_config
+
+        return load_yaml_config(path)
+    return load_python_config(path)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run a safe Docker Compose deployment.")
     parser.add_argument(
         "--config",
-        default="deploy_config.py",
-        help="Path to a Python file containing CONFIG.",
+        default="deploy_config.yaml",
+        help="Path to a Python or YAML configuration file.",
     )
     arguments = parser.parse_args()
-
     try:
         config = load_config(arguments.config)
     except Exception as error:
         print("The deployment configuration could not be loaded: {0}".format(error))
         return 2
-
     return run(config)
 
 

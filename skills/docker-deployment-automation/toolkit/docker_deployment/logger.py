@@ -1,81 +1,74 @@
-import os
 import re
 import sys
 from datetime import datetime
 from pathlib import Path
 
-
 SECRET_PATTERN = re.compile(
     r"(?i)(password|passwd|token|secret|api[_-]?key|private[_-]?key)\s*[:=]\s*([^\s,;]+)"
 )
 
+LEVEL_COLORS = {
+    "info": "\033[36m",
+    "ok": "\033[32m",
+    "warn": "\033[33m",
+    "fail": "\033[31m",
+}
+
 
 def redact_text(text, secret_values=None):
-    if text is None:
-        return ""
-
-    # Redact known values and common secret formats before logging.
     redacted = str(text)
     if secret_values:
         for value in secret_values:
             if value:
                 redacted = redacted.replace(str(value), "[REDACTED]")
-
     redacted = SECRET_PATTERN.sub(r"\1=[REDACTED]", redacted)
     return redacted
 
 
 class Logger:
     def __init__(self, log_path, stream=None, secret_values=None):
-        self.log_path = Path(log_path)
-        self.log_path.parent.mkdir(parents=True, exist_ok=True)
-        self.file = self.log_path.open("a", encoding="utf-8")
-        self.stream = stream or sys.stdout
-        self.secret_values = secret_values or []
-        # Only interactive terminals should receive color codes.
-        self.use_color = self.stream.isatty() and not os.environ.get("NO_COLOR")
+        self.log_path = log_path
+        self.stream = stream
+        if self.stream is None:
+            self.stream = sys.stdout
+        if not secret_values:
+            secret_values = []
+        self.secret_values = secret_values
+        self.use_color = bool(self.stream.isatty())
+        self.file = None
+        try:
+            path = Path(log_path)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            self.file = path.open("a", encoding="utf-8")
+        except OSError:
+            self.file = None
 
-    def close(self):
-        if not self.file.closed:
-            self.file.close()
-
-    def _write(self, level, message):
-        # Use the same redacted message for the file and terminal.
+    def write(self, level, message):
         clean_message = redact_text(message, self.secret_values)
-        level_label = "[{0}]".format(level)
-        line = "{0} {1}".format(level_label, clean_message)
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.file.write("[{0}] {1}\n".format(timestamp, line))
-        self.file.flush()
-
-        terminal_level = level_label
+        label = "[{0}]".format(level.upper())
         if self.use_color:
-            color = ""
-            if level == "INFO":
-                color = "\033[36m"
-            elif level in (" OK ", "PASS"):
-                color = "\033[32m"
-            elif level == "WARN":
-                color = "\033[33m"
-            elif level == "FAIL":
-                color = "\033[31m"
-            terminal_level = color + level_label + "\033[0m"
-
-        terminal_line = terminal_level + " " + clean_message
-        self.stream.write(terminal_line + "\n")
-        self.stream.flush()
+            color = LEVEL_COLORS.get(level, "")
+            print("{0}{1}\033[0m {2}".format(color, label, clean_message), file=self.stream)
+        else:
+            print("{0} {1}".format(label, clean_message), file=self.stream)
+        if self.file:
+            stamp = datetime.now().isoformat(timespec="seconds")
+            self.file.write("{0} {1} {2}\n".format(stamp, label, clean_message))
+            self.file.flush()
 
     def info(self, message):
-        self._write("INFO", message)
+        self.write("info", message)
 
     def ok(self, message):
-        self._write(" OK ", message)
+        self.write("ok", message)
 
-    def success(self, message):
-        self._write("PASS", message)
-
-    def warning(self, message):
-        self._write("WARN", message)
+    def warn(self, message):
+        self.write("warn", message)
 
     def fail(self, message):
-        self._write("FAIL", message)
+        self.write("fail", message)
+
+    def close(self):
+        if self.file:
+            self.file.close()
+            self.file = None

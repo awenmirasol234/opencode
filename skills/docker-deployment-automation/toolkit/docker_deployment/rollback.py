@@ -1,52 +1,34 @@
 from .commands import format_command
 from .config import project_directory
-from .health import run_health_checks
 
 
-def rollback(
-    config,
-    backup_result,
-    command_runner,
-    logger,
-    deployment_identity=None,
-    compose_command=None,
-):
-    logger.info("Rolling back the application.")
-    rollback_config = config.get("rollback", {})
-    command = rollback_config.get("command")
+def rollback_command_for(config):
+    command = config.get("rollback", {}).get("command")
     if not command:
         command = config.get("compose", {}).get("rollback_args")
+    return command
+
+
+def perform_rollback(config, command_runner, logger, identity, backup_dir):
+    command = rollback_command_for(config)
     if not command:
         logger.fail("No rollback command was configured.")
         return {"ok": False, "error": "No rollback command was configured."}
-
+    if not backup_dir:
+        backup_dir = ""
     values = {
-        "backup_dir": backup_result.get("backup_dir", ""),
+        "backup_dir": str(backup_dir),
         "project_dir": str(project_directory(config)),
+        "commit_sha": "",
+        "previous_commit_sha": "",
     }
-    if deployment_identity:
-        values["commit_sha"] = deployment_identity.get("commit_sha", "")
-        values["previous_commit_sha"] = deployment_identity.get("previous_commit_sha", "")
+    if identity:
+        values["commit_sha"] = identity.get("commit_sha", "")
+        values["previous_commit_sha"] = identity.get("previous_commit_sha", "")
     command = format_command(command, values)
     result = command_runner(command, str(project_directory(config)), 600)
     if not result.ok():
         logger.fail("The application rollback failed.")
         return {"ok": False, "error": "The application rollback failed."}
-
-    # A rollback is complete only after the restored app passes its checks.
-    health_result = run_health_checks(
-        config,
-        command_runner,
-        logger,
-        compose_command,
-    )
-    if not health_result["ok"]:
-        logger.fail("Rollback verification failed.")
-        return {
-            "ok": False,
-            "error": "Rollback verification failed.",
-            "diagnostics": health_result.get("diagnostics", []),
-        }
-
-    logger.success("Rollback completed and was verified successfully.")
-    return {"ok": True, "error": "", "diagnostics": []}
+    logger.ok("The application rollback completed successfully.")
+    return {"ok": True, "error": ""}

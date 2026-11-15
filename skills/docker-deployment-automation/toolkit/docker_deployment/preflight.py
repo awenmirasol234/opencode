@@ -1,120 +1,137 @@
 import os
 
-from .commands import find_compose_command
-from .config import (
-    environment_values,
-    project_directory,
-    project_path,
-    read_deployment_identity,
-)
+from .config import environment_values, project_directory
+
+
+def check_project_directory(config, logger):
+    if project_directory(config).is_dir():
+        logger.info("The project directory was found.")
+        return ""
+    logger.fail("The project directory was not found.")
+    return "The project directory was not found."
+
+
+def check_compose_files(config, logger):
+    project_dir = project_directory(config)
+    for compose_file in config.get("compose_files", ["compose.yaml"]):
+        path = project_dir / compose_file
+        if not path.is_file():
+            logger.fail("The Compose file was not found: {0}.".format(compose_file))
+            return "The Compose file was not found: {0}.".format(compose_file)
+    logger.info("The Compose files were found.")
+    return ""
+
+
+def check_env_file(config, logger):
+    env_file = config.get("env_file")
+    if not env_file:
+        return ""
+    path = project_directory(config) / env_file
+    if not path.is_file():
+        logger.fail("The environment file was not found: {0}.".format(env_file))
+        return "The environment file was not found: {0}.".format(env_file)
+    logger.info("The environment file was found.")
+    return ""
+
+
+def check_required_env(config, logger):
+    values = environment_values(config)
+    for name in config.get("required_env", []):
+        if not values.get(name):
+            logger.fail("The required environment value is missing: {0}.".format(name))
+            return "The required environment value is missing: {0}.".format(name)
+    logger.info("The required environment values are available.")
+    return ""
+
+
+def check_project_permissions(config, logger):
+    project_dir = project_directory(config)
+    if not os.access(str(project_dir), os.R_OK):
+        logger.fail("The project directory is not readable.")
+        return "The project directory is not readable."
+    if not os.access(str(project_dir), os.W_OK):
+        logger.fail("The project directory is not writable.")
+        return "The project directory is not writable."
+    logger.info("The project directory is readable and writable.")
+    return ""
+
+
+def check_deployment_identity(config, logger):
+    identity = config.get("deployment_identity")
+    if identity is None:
+        return ""
+    if not identity.get("ok"):
+        logger.fail("The deployment commit SHA is not valid.")
+        return "The deployment commit SHA is not valid."
+    deployment = config.get("deployment", {})
+    if deployment.get("require_previous_sha") and not identity.get("previous_commit_sha"):
+        logger.fail("The previous deployment commit SHA is not available.")
+        return "The previous deployment commit SHA is not available."
+    logger.info("The deployment commit SHA is valid.")
+    return ""
+
+
+def check_docker_available(config, logger):
+    if config.get("compose_command"):
+        logger.info("Docker Compose is available.")
+        return ""
+    logger.fail("Docker Compose is not available.")
+    return "Docker Compose is not available."
+
+
+def check_docker_engine(config, command_runner, logger):
+    result = command_runner(["docker", "info"], str(project_directory(config)), 60)
+    if result.ok():
+        logger.info("The Docker Engine is available.")
+        return ""
+    logger.fail("The Docker Engine is not available.")
+    return "The Docker Engine is not available."
+
+
+def check_required_images(config, command_runner, logger):
+    for image in config.get("required_images", []):
+        if not isinstance(image, str) or not image.strip():
+            logger.fail("A required Docker image name is not valid.")
+            return "A required Docker image name is not valid."
+        result = command_runner(
+            ["docker", "image", "inspect", image], str(project_directory(config)), 60
+        )
+        if not result.ok():
+            logger.fail("The required Docker image is not available: {0}.".format(image))
+            return "The required Docker image is not available: {0}.".format(image)
+    logger.info("The required Docker images are available.")
+    return ""
 
 
 def run_preflight(config, command_runner, logger):
-    # Do not change services until every required check passes.
-    logger.info("Running preflight checks.")
+    logger.info("Running the preflight checks.")
+    messages = [
+        check_project_directory(config, logger),
+        check_compose_files(config, logger),
+        check_env_file(config, logger),
+        check_required_env(config, logger),
+        check_project_permissions(config, logger),
+        check_deployment_identity(config, logger),
+        check_docker_available(config, logger),
+        check_docker_engine(config, command_runner, logger),
+        check_required_images(config, command_runner, logger),
+    ]
     errors = []
-    project_dir = project_directory(config)
-
-    if project_dir.is_dir():
-        logger.ok("The project directory was found.")
-    else:
-        errors.append("The project directory was not found.")
-        logger.fail("The project directory was not found.")
-
-    for compose_file in config.get("compose_files", ["compose.yaml"]):
-        path = project_path(config, compose_file)
-        if path.is_file():
-            logger.ok("The Compose file was found.")
-        else:
-            errors.append("The Compose file was not found: {0}.".format(compose_file))
-            logger.fail("The Compose file was not found: {0}.".format(compose_file))
-
-    env_file = config.get("env_file")
-    if env_file:
-        path = project_path(config, env_file)
-        if path.is_file():
-            logger.ok("The environment file was found.")
-        else:
-            errors.append("The environment file was not found: {0}.".format(env_file))
-            logger.fail("The environment file was not found: {0}.".format(env_file))
-
-    values = environment_values(config)
-    for name in config.get("required_env", []):
-        if values.get(name):
-            logger.ok("The required environment value {0} is available.".format(name))
-        else:
-            errors.append("The required environment value {0} is missing.".format(name))
-            logger.fail("The required environment value {0} is missing.".format(name))
-
-    if os.access(str(project_dir), os.R_OK):
-        logger.ok("The project directory is readable.")
-    else:
-        errors.append("The project directory is not readable.")
-        logger.fail("The project directory is not readable.")
-
-    if os.access(str(project_dir), os.W_OK):
-        logger.ok("The project directory is writable.")
-    else:
-        errors.append("The project directory is not writable.")
-        logger.fail("The project directory is not writable.")
-
-    identity_result = read_deployment_identity(config)
-    deployment_identity = None
-    if identity_result["ok"]:
-        deployment_identity = identity_result
-        logger.ok("The deployment commit SHA is valid.")
-        if identity_result.get("previous_commit_sha"):
-            logger.ok("The previous deployment commit SHA was found.")
-        else:
-            logger.warning("No previous deployment commit SHA was found.")
-    else:
-        for error in identity_result["errors"]:
-            errors.append(error)
-            logger.fail(error)
-
-    compose_command = find_compose_command(command_runner, str(project_dir))
-    if compose_command:
-        logger.ok("Docker Compose is available.")
-    else:
-        errors.append("Docker Compose is not available.")
-        logger.fail("Docker Compose is not available.")
-
-    docker_result = command_runner(["docker", "info"], str(project_dir), 60)
-    if docker_result.ok():
-        logger.ok("The Docker Engine is available.")
-    else:
-        errors.append("The Docker Engine is not available.")
-        logger.fail("The Docker Engine is not available.")
-
-    for image in config.get("required_images", []):
-        if not isinstance(image, str) or not image.strip():
-            errors.append("A required Docker image name is invalid.")
-            logger.fail("A required Docker image name is invalid.")
-            continue
-        image_result = command_runner(
-            ["docker", "image", "inspect", image],
-            str(project_dir),
-            60,
-        )
-        if image_result.ok():
-            logger.ok("The required Docker image is available: {0}.".format(image))
-        else:
-            errors.append("The required Docker image is not available: {0}.".format(image))
-            logger.fail("The required Docker image is not available: {0}.".format(image))
-
+    for message in messages:
+        if message:
+            errors.append(message)
     if errors:
-        logger.fail("Preflight checks failed.")
-        return {
-            "ok": False,
-            "errors": errors,
-            "compose_command": compose_command,
-            "deployment_identity": deployment_identity,
-        }
-
-    logger.success("Preflight checks completed successfully.")
-    return {
-        "ok": True,
-        "errors": [],
-        "compose_command": compose_command,
-        "deployment_identity": deployment_identity,
+        success = False
+    else:
+        success = True
+    result = {
+        "ok": success,
+        "errors": errors,
+        "compose_command": config.get("compose_command"),
+        "deployment_identity": config.get("deployment_identity"),
     }
+    if result["ok"]:
+        logger.ok("The preflight checks completed successfully.")
+    else:
+        logger.fail("The preflight checks failed.")
+    return result

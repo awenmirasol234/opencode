@@ -1,206 +1,128 @@
 import time
-from urllib.error import URLError
-from urllib.request import urlopen
+import urllib.error
+import urllib.request
 
 from .config import project_directory
-from .deployment import build_compose_command
+
+INSPECT_FORMAT = "{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}"
 
 
-def _check_command(check, command_runner, config):
+def check_command_type(check, command_runner, config):
     command = check.get("command")
     if not command:
-        return False, "The health-check command is missing.", True, ""
+        return {"passed": False, "error": "The health-check command is missing.", "terminal": True, "diagnostic": ""}
     timeout = check.get("timeout", 30)
     result = command_runner(command, str(project_directory(config)), timeout)
     if result.ok():
-        return True, "", False, ""
-    diagnostic = "\n".join(value for value in (result.stdout, result.stderr) if value)
+        return {"passed": True, "error": "", "terminal": False, "diagnostic": ""}
+    diagnostic = "\n".join([result.stdout, result.stderr])
     if result.stderr:
-        return False, result.stderr.strip(), False, diagnostic
-    return False, "The health-check command failed.", False, diagnostic
+        return {"passed": False, "error": result.stderr.strip(), "terminal": False, "diagnostic": diagnostic}
+    return {"passed": False, "error": "The health-check command failed.", "terminal": False, "diagnostic": diagnostic}
 
 
-def _check_url(check):
+def check_url_type(check):
     url = check.get("url")
     if not url:
-        return False, "The health-check URL is missing.", True, ""
+        return {"passed": False, "error": "The health-check URL is missing.", "terminal": True, "diagnostic": ""}
     timeout = check.get("timeout", 10)
     expected_status = check.get("expected_status", 200)
     try:
-        with urlopen(url, timeout=timeout) as response:
-            if response.status == expected_status:
-                return True, "", False, ""
-            return False, "The health-check returned an unexpected status.", False, ""
-    except (OSError, URLError) as error:
-        return False, str(error), False, ""
+        response = urllib.request.urlopen(url, timeout=timeout)
+    except (OSError, urllib.error.URLError) as error:
+        return {"passed": False, "error": str(error), "terminal": False, "diagnostic": ""}
+    if response.status == expected_status:
+        return {"passed": True, "error": "", "terminal": False, "diagnostic": ""}
+    return {"passed": False, "error": "The health-check returned an unexpected status.", "terminal": False, "diagnostic": ""}
 
 
-def _check_container(check, command_runner, config, compose_command):
+def find_container_id(check, command_runner, config, compose_command):
+    service = check.get("service")
+    command = list(compose_command) + ["ps", "-q", service]
+    result = command_runner(command, str(project_directory(config)), 30)
+    if not result.ok():
+        return ""
+    parts = result.stdout.split()
+    if not parts:
+        return ""
+    return parts[0]
+
+
+def check_container_type(check, command_runner, config, compose_command):
     service = check.get("service")
     if not service:
-        return False, "The container health-check service is missing.", True, ""
+        return {"passed": False, "error": "The container health-check service is missing.", "terminal": True, "diagnostic": ""}
     if not compose_command:
-        return False, "The Compose command is missing for the container health check.", True, ""
-
-    ps_command = build_compose_command(config, compose_command, ["ps", "-q", service])
-    ps_result = command_runner(ps_command, str(project_directory(config)), 60)
-    container_id = ps_result.stdout.strip()
-    if not ps_result.ok() or not container_id:
-        diagnostic = "\n".join(value for value in (ps_result.stdout, ps_result.stderr) if value)
-        return False, "The container is missing: {0}.".format(service), True, diagnostic
-
-    container_id = container_id.splitlines()[0].strip()
-    inspect_command = [
-        "docker",
-        "inspect",
-        "--format",
-        "{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}",
-        container_id,
-    ]
-    inspect_result = command_runner(inspect_command, str(project_directory(config)), 60)
-    if not inspect_result.ok():
-        diagnostic = "\n".join(
-            value for value in (inspect_result.stdout, inspect_result.stderr) if value
-        )
-        return False, "The container status could not be read: {0}.".format(service), True, diagnostic
-
-    status_text = inspect_result.stdout.strip()
-    status_parts = status_text.split("|", 1)
-    status = status_parts[0]
+        return {"passed": False, "error": "The Docker Compose command is missing.", "terminal": True, "diagnostic": ""}
+    container_id = find_container_id(check, command_runner, config, compose_command)
+    if not container_id:
+        return {"passed": False, "error": "The container was not found: {0}.".format(service), "terminal": True, "diagnostic": ""}
+    command = ["docker", "inspect", "--format", INSPECT_FORMAT, container_id]
+    result = command_runner(command, str(project_directory(config)), 30)
+    if not result.ok():
+        return {"passed": False, "error": "The container could not be inspected: {0}.".format(service), "terminal": True, "diagnostic": ""}
+    output = result.stdout.strip()
+    parts = output.split("|")
+    status = parts[0].strip()
     health_status = ""
-    if len(status_parts) == 2:
-        health_status = status_parts[1]
-
+    if len(parts) > 1:
+        health_status = parts[1].strip()
     if status in ("exited", "dead"):
-        return False, "The container is {0}: {1}.".format(status, service), True, status_text
-    if status == "running" and health_status == "healthy":
-        return True, "", False, ""
-    if status == "running" and not health_status and not check.get("require_health", True):
-        return True, "", False, ""
-    if status == "running" and health_status == "unhealthy":
-        return False, "The container is unhealthy: {0}.".format(service), False, status_text
-    if status == "running" and health_status == "starting":
-        return False, "The container health check is still starting: {0}.".format(service), False, status_text
-    if status == "running" and not health_status:
-        return False, "The container has no health check: {0}.".format(service), False, status_text
-    return False, "The container is not running: {0}.".format(service), False, status_text
+        return {"passed": False, "error": "The container is {0}: {1}.".format(status, service), "terminal": True, "diagnostic": output}
+    if status != "running":
+        return {"passed": False, "error": "The container is not running: {0}.".format(service), "terminal": False, "diagnostic": output}
+    if health_status == "healthy":
+        return {"passed": True, "error": "", "terminal": False, "diagnostic": ""}
+    if health_status == "unhealthy":
+        return {"passed": False, "error": "The container is unhealthy: {0}.".format(service), "terminal": False, "diagnostic": output}
+    if health_status == "starting":
+        return {"passed": False, "error": "The container health check is still starting: {0}.".format(service), "terminal": False, "diagnostic": output}
+    return {"passed": False, "error": "The container has no health check: {0}.".format(service), "terminal": False, "diagnostic": output}
 
 
-def _run_check(check, command_runner, config, compose_command):
-    if not isinstance(check, dict):
-        return False, "The health check configuration is invalid.", True, ""
+def run_single_check(check, command_runner, config, compose_command):
     check_type = check.get("type", "command")
     if check_type == "command":
-        return _check_command(check, command_runner, config)
+        return check_command_type(check, command_runner, config)
     if check_type == "url":
-        return _check_url(check)
+        return check_url_type(check)
     if check_type == "container":
-        return _check_container(check, command_runner, config, compose_command)
-    return False, "The health-check type is not supported.", True, ""
-
-
-def _capture_diagnostics(checks, command_runner, config, compose_command):
-    diagnostics = []
-    for check in checks:
-        if not isinstance(check, dict):
-            continue
-        if check.get("type", "command") != "container":
-            continue
-        service = check.get("service")
-        if not service or not compose_command:
-            continue
-        command = build_compose_command(
-            config,
-            compose_command,
-            ["logs", "--no-color", "--tail", "100", service],
-        )
-        result = command_runner(command, str(project_directory(config)), 60)
-        output = "\n".join(value for value in (result.stdout, result.stderr) if value)
-        if output:
-            diagnostics.append("Diagnostics for {0}: {1}".format(service, output.strip()))
-    return diagnostics
+        return check_container_type(check, command_runner, config, compose_command)
+    return {"passed": False, "error": "The health-check type is not supported.", "terminal": True, "diagnostic": ""}
 
 
 def run_health_checks(config, command_runner, logger, compose_command=None):
     checks = config.get("health_checks", [])
-    if not checks:
-        logger.warning("No health checks were configured.")
-        return {"ok": False, "errors": ["No health checks were configured."], "diagnostics": []}
-
     health_config = config.get("health", {})
-    if not isinstance(health_config, dict):
-        logger.fail("The health-check configuration is invalid.")
-        return {"ok": False, "errors": ["The health-check configuration is invalid."], "diagnostics": []}
-
     timeout = health_config.get("timeout", 120)
     interval = health_config.get("interval", 5)
-    if not isinstance(timeout, (int, float)) or isinstance(timeout, bool) or timeout < 0:
-        logger.fail("The health-check timeout is invalid.")
-        return {"ok": False, "errors": ["The health-check timeout is invalid."], "diagnostics": []}
-    if not isinstance(interval, (int, float)) or isinstance(interval, bool) or interval < 0:
-        logger.fail("The health-check interval is invalid.")
-        return {"ok": False, "errors": ["The health-check interval is invalid."], "diagnostics": []}
-
-    logger.info(
-        "Polling health checks for up to {0} seconds with a {1}-second interval.".format(
-            timeout, interval
-        )
-    )
     deadline = time.monotonic() + timeout
+    diagnostics = []
+    errors = []
     while True:
-        errors = []
-        warnings = []
         failed_checks = []
-        diagnostics = []
-        terminal_failure = False
         for check in checks:
-            name = "Application health"
-            required = True
-            if isinstance(check, dict):
-                name = check.get("name", name)
-                required = check.get("required", True)
-            passed, last_error, terminal, diagnostic = _run_check(
-                check,
-                command_runner,
-                config,
-                compose_command,
-            )
-
-            if passed:
-                logger.ok("{0} passed.".format(name))
-            else:
-                error = "{0} failed: {1}".format(name, last_error)
-                logger.warning(error)
-                failed_checks.append(check)
-                if diagnostic:
-                    diagnostics.append("Output for {0}: {1}".format(name, diagnostic))
-                if required:
-                    errors.append(error)
-                    if terminal:
-                        terminal_failure = True
-                else:
-                    warnings.append(error)
-
-        if not errors:
-            for warning in warnings:
-                logger.warning(warning)
-            logger.success("Health checks completed successfully.")
-            return {"ok": True, "errors": [], "warnings": warnings, "diagnostics": diagnostics}
-
-        if terminal_failure or time.monotonic() >= deadline:
-            diagnostics.extend(
-                _capture_diagnostics(
-                    failed_checks,
-                    command_runner,
-                    config,
-                    compose_command,
-                )
-            )
-            for diagnostic in diagnostics:
-                logger.fail(diagnostic)
-            logger.fail("Required health checks failed before the timeout.")
+            if not isinstance(check, dict):
+                continue
+            result = run_single_check(check, command_runner, config, compose_command)
+            name = check.get("name", "health check")
+            if result["passed"]:
+                logger.info("{0} passed.".format(name))
+                continue
+            error = "{0} failed: {1}".format(name, result["error"])
+            if not check.get("required", True):
+                logger.warn("{0} did not pass: {1}".format(name, result["error"]))
+                continue
+            logger.warn(error)
+            failed_checks.append(check)
+            if result["diagnostic"]:
+                diagnostics.append("Output for {0}: {1}".format(name, result["diagnostic"]))
+            if result["terminal"]:
+                errors.append(error)
+        if not failed_checks:
+            return {"ok": True, "errors": [], "diagnostics": []}
+        if errors:
             return {"ok": False, "errors": errors, "diagnostics": diagnostics}
-
-        if interval > 0:
-            remaining = deadline - time.monotonic()
-            time.sleep(min(interval, max(remaining, 0)))
+        if time.monotonic() >= deadline:
+            return {"ok": False, "errors": ["The health checks timed out."], "diagnostics": diagnostics}
+        time.sleep(interval)

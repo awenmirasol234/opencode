@@ -29,6 +29,7 @@ CONFIG = {
     "compose": {
         "pull_args": ["pull"],
         "deploy_args": ["up", "-d"],
+        "rollback_args": ["up", "-d"],
     },
     "database": {
         # Add project-specific commands only when a database is used. Services
@@ -36,11 +37,11 @@ CONFIG = {
         # "services": ["db"],
         # "readiness_command": ["replace", "with", "your", "readiness", "command"],
         # "backup_command": ["replace", "with", "your", "backup", "command", "{backup_file}"],
-        # "verify_command": ["replace", "with", "your", "backup", "verification", "command", "{backup_file}"],
         # "backup_file": "database.backup",
         # The default timeout is 120 seconds and the default interval is 5 seconds.
         "readiness_timeout": 120,
         "readiness_interval": 5,
+        "readiness_retries": 30,
     },
     "health": {
         # Health checks run immediately, then repeat until they pass or timeout.
@@ -53,11 +54,11 @@ CONFIG = {
             "type": "url",
             "url": "http://127.0.0.1:8080/health",
             "expected_status": 200,
-            # Container checks require a Docker healthcheck unless require_health is false.
-            # Set required to False for a noncritical service.
+            # Container checks require a Docker healthcheck.
             # "type": "container",
             # "service": "app",
-            # "required": True,
+            # Set required to False for a noncritical check.
+            # "required": False,
         }
     ],
     "rollback": {

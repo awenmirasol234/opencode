@@ -5,6 +5,10 @@ import subprocess
 class CommandResult:
     def __init__(self, returncode, stdout, stderr):
         self.returncode = returncode
+        if not stdout:
+            stdout = ""
+        if not stderr:
+            stderr = ""
         self.stdout = stdout
         self.stderr = stderr
 
@@ -12,8 +16,7 @@ class CommandResult:
         return self.returncode == 0
 
 
-def run_command(command, cwd=None, timeout=None):
-    # Run commands directly so config values are not passed through a shell.
+def run_command(command, cwd, timeout):
     try:
         completed = subprocess.run(
             command,
@@ -24,38 +27,48 @@ def run_command(command, cwd=None, timeout=None):
             timeout=timeout,
             check=False,
         )
-        return CommandResult(
-            completed.returncode,
-            completed.stdout or "",
-            completed.stderr or "",
-        )
     except FileNotFoundError as error:
-        return CommandResult(127, "", str(error))
+        return CommandResult(1, "", str(error))
     except subprocess.TimeoutExpired as error:
-        output = error.stdout or ""
-        error_output = error.stderr or ""
-        return CommandResult(124, output, error_output + " The command timed out.")
+        error_output = error.stderr
+        if not error_output:
+            error_output = ""
+        error_text = error.stdout
+        if not error_text:
+            error_text = ""
+        message = error_output + " The command timed out."
+        return CommandResult(1, error_text, message)
+    return CommandResult(completed.returncode, completed.stdout, completed.stderr)
 
 
-def find_compose_command(command_runner, project_dir):
-    # Support both current and older Docker Compose installs.
-    docker_path = shutil.which("docker")
-    if docker_path:
-        result = command_runner(["docker", "compose", "version"], project_dir, 30)
+def find_compose_command(run_command, project_dir):
+    if shutil.which("docker"):
+        result = run_command(["docker", "compose", "version"], project_dir, 30)
         if result.ok():
             return ["docker", "compose"]
-
-    compose_path = shutil.which("docker-compose")
-    if compose_path:
-        result = command_runner(["docker-compose", "version"], project_dir, 30)
+    if shutil.which("docker-compose"):
+        result = run_command(["docker-compose", "version"], project_dir, 30)
         if result.ok():
             return ["docker-compose"]
-
     return None
 
 
 def format_command(command, values):
-    formatted = []
+    items = []
     for item in command:
-        formatted.append(str(item).format(**values))
-    return formatted
+        text = str(item)
+        for name in values:
+            text = text.replace("{" + name + "}", str(values[name]))
+        items.append(text)
+    return items
+
+
+def compose_arguments(config, compose_command, arguments):
+    command = list(compose_command)
+    for compose_file in config.get("compose_files", ["compose.yaml"]):
+        command.extend(["-f", str(compose_file)])
+    env_file = config.get("env_file")
+    if env_file:
+        command.extend(["--env-file", str(env_file)])
+    command.extend(arguments)
+    return command

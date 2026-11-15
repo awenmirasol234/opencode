@@ -1,61 +1,47 @@
 import os
 from datetime import datetime
+from pathlib import Path
 
-from .config import path_inside_project, project_path
+from .config import project_directory, project_path
 
 
-class DeploymentLock:
-    def __init__(self, config):
-        self.config = config
-        value = config.get("lock_file", ".deployment/deployment.lock")
-        self.path = None
-        if isinstance(value, str) and value.strip():
-            self.path = project_path(config, value)
-        self.acquired = False
+def lock_file_path(config):
+    value = config.get("lock_file", ".deployment/deployment.lock")
+    return project_path(config, value)
 
-    def acquire(self):
-        if self.path is None or not path_inside_project(self.config, self.path):
-            return {
-                "ok": False,
-                "error": "The deployment lock file must stay inside the project.",
-            }
 
-        try:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            descriptor = os.open(
-                str(self.path),
-                os.O_CREAT | os.O_EXCL | os.O_WRONLY,
-                0o600,
-            )
-            with os.fdopen(descriptor, "w", encoding="utf-8") as lock_file:
-                lock_file.write(
-                    "process={0}\nstarted={1}\n".format(
-                        os.getpid(), datetime.now().isoformat()
-                    )
-                )
-            self.acquired = True
-            return {"ok": True, "error": ""}
-        except FileExistsError:
-            return {
-                "ok": False,
-                "error": "Another deployment is already running.",
-            }
-        except OSError:
-            return {
-                "ok": False,
-                "error": "The deployment lock could not be acquired.",
-            }
+def is_inside_project(path, config):
+    try:
+        Path(path).relative_to(project_directory(config))
+        return True
+    except ValueError:
+        return False
 
-    def release(self):
-        if not self.acquired:
-            return {"ok": True, "error": ""}
 
-        try:
-            self.path.unlink()
-            self.acquired = False
-            return {"ok": True, "error": ""}
-        except OSError:
-            return {
-                "ok": False,
-                "error": "The deployment lock could not be released.",
-            }
+def acquire_lock(config):
+    if not config.get("deployment_lock", True):
+        return {"ok": True, "error": "", "skipped": True}
+    path = lock_file_path(config)
+    if not is_inside_project(path, config):
+        return {"ok": False, "error": "The deployment lock file must stay inside the project."}
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError:
+        return {"ok": False, "error": "Another deployment is already running."}
+    except OSError:
+        return {"ok": False, "error": "The deployment lock could not be acquired."}
+    with os.fdopen(handle, "w") as stream:
+        stream.write("pid={0}\nstarted={1}\n".format(os.getpid(), datetime.now().isoformat()))
+    return {"ok": True, "error": "", "skipped": False}
+
+
+def release_lock(config):
+    path = lock_file_path(config)
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        return {"ok": True, "error": ""}
+    except OSError:
+        return {"ok": False, "error": "The deployment lock could not be released."}
+    return {"ok": True, "error": ""}
